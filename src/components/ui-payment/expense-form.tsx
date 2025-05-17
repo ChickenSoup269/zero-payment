@@ -25,12 +25,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Expense } from "@/lib/types"
 import {
   EXPENSE_CATEGORIES,
-  CATEGORY_COLORS,
+  // CATEGORY_COLORS,
   DESCRIPTION_SUGGESTIONS,
 } from "@/lib/constants"
 import {
   getCurrentDateFormatted,
-  getCategoryFromSubcategory,
+  //  getCategoryFromSubcategory,
   generateUniqueId,
 } from "@/lib/utils"
 import {
@@ -63,11 +63,14 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
     },
   })
 
+  type ExpenseCategoryKey = keyof typeof EXPENSE_CATEGORIES
   const selectedCategory = form.watch("category")
   const selectedSubcategory = form.watch("subcategory")
-  const subcategories = selectedCategory
-    ? EXPENSE_CATEGORIES[selectedCategory] || []
-    : []
+  const subcategories =
+    selectedCategory &&
+    (Object.keys(EXPENSE_CATEGORIES) as string[]).includes(selectedCategory)
+      ? EXPENSE_CATEGORIES[selectedCategory as ExpenseCategoryKey] || []
+      : []
 
   // Lấy gợi ý mô tả dựa trên danh mục và danh mục con đã chọn
   const descriptionSuggestions = React.useMemo(() => {

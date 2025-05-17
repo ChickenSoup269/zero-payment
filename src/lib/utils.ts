@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { ClassValue, clsx } from "clsx"
+import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { Expense, TimeFrame, UserData } from "./types"
 import { EXPENSE_CATEGORIES } from "./constants"
+import { Priority, Status, Task } from "./types"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -170,4 +171,77 @@ export function isValidUserData(data: any): boolean {
     typeof data.created === "string" &&
     typeof data.lastUpdated === "string"
   )
+}
+
+export function generateId(): string {
+  return Math.random().toString(36).substring(2, 10)
+}
+
+export function getPriorityLabel(priority: Priority): string {
+  const labels = {
+    tomorrow: "Cần làm vào ngày mai",
+    normal: "Cần làm",
+    urgent: "Cần gấp",
+  }
+  return labels[priority]
+}
+
+export function getPriorityColor(priority: Priority): string {
+  const colors = {
+    tomorrow: "bg-blue-100 text-blue-800",
+    normal: "bg-green-100 text-green-800",
+    urgent: "bg-red-100 text-red-800",
+  }
+  return colors[priority]
+}
+
+export function getStatusLabel(status: Status): string {
+  const labels = {
+    todo: "Cần làm",
+    "in-progress": "Đang làm",
+    preparing: "Chuẩn bị",
+    completed: "Hoàn thành",
+  }
+  return labels[status]
+}
+
+export function getStatusColor(status: Status): string {
+  const colors = {
+    todo: "bg-gray-100 text-gray-800",
+    "in-progress": "bg-yellow-100 text-yellow-800",
+    preparing: "bg-purple-100 text-purple-800",
+    completed: "bg-green-100 text-green-800",
+  }
+  return colors[status]
+}
+
+export function taskToCSV(tasks: Task[]): string {
+  const headers = [
+    "Tiêu đề",
+    "Mô tả",
+    "Ưu tiên",
+    "Trạng thái",
+    "Ngày tạo",
+    "Hạn cuối",
+  ]
+
+  const csvContent = [
+    headers.join(","),
+    ...tasks.map((task) =>
+      [
+        `"${task.title.replace(/"/g, '""')}"`,
+        `"${task.description.replace(/"/g, '""')}"`,
+        `"${getPriorityLabel(task.priority)}"`,
+        `"${getStatusLabel(task.status)}"`,
+        `"${formatDate(task.createdAt)}"`,
+        `"${task.dueDate ? formatDate(task.dueDate) : ""}"`,
+      ].join(",")
+    ),
+  ].join("\n")
+
+  return csvContent
+}
+
+export function exportToJSON(tasks: Task[]): string {
+  return JSON.stringify(tasks, null, 2)
 }

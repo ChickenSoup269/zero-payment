@@ -16,5 +16,23 @@ export interface UserData {
   lastUpdated: string
 }
 
+export interface Task {
+  id: string
+  title: string
+  description: string
+  priority: Priority
+  status: Status
+  createdAt: string
+  dueDate?: string
+}
+
+export interface TaskFilters {
+  priority: Priority | "all"
+  status: Status | "all"
+  searchTerm: string
+}
+
+export type Priority = "tomorrow" | "normal" | "urgent"
+export type Status = "todo" | "in-progress" | "preparing" | "completed"
 export type TimeFrame = "week" | "month" | "year" | "all"
 export type ChartType = "bar" | "pie" | "line"
