@@ -1,103 +1,227 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import * as React from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { FirstTimeModal } from "@/components/ui-payment/first-time-modal"
+import { ExpenseForm } from "@/components/ui-payment/expense-form"
+import { ExpenseTable } from "@/components/ui-payment/expense-table"
+import { ExpenseChart } from "@/components/ui-payment/expense-chart"
+import { ExpenseSummary } from "@/components/ui-payment/expense-summary"
+import { FileImportExport } from "@/components/ui-payment/file-import-export"
+import { UserData, Expense, TimeFrame, ChartType } from "@/lib/types"
+import {
+  DEFAULT_USER_DATA,
+  TIME_FRAME_OPTIONS,
+  CHART_TYPE_OPTIONS,
+} from "@/lib/constants"
+import {
+  loadUserData,
+  saveUserData,
+  filterExpensesByTimeFrame,
+  //groupExpensesByCategory,
+  //calculateTotalExpenses,
+} from "@/lib/utils"
+import { Button } from "@/components/ui/button"
+import { BarChart, PieChart, LineChartIcon } from "lucide-react"
+
+export default function ExpenseDashboard() {
+  const [userData, setUserData] = useState<UserData>(DEFAULT_USER_DATA)
+  const [showFirstTimeModal, setShowFirstTimeModal] = useState(false)
+  const [timeFrame, setTimeFrame] = useState<TimeFrame>("month")
+  const [chartType, setChartType] = useState<ChartType>("pie")
+  const [filteredExpenses, setFilteredExpenses] = useState<Expense[]>([])
+  const [currency, setCurrency] = useState<"VND" | "USD">("VND")
+  const router = useRouter()
+
+  useEffect(() => {
+    const data = loadUserData()
+    if (data) {
+      setUserData(data)
+    } else {
+      setShowFirstTimeModal(true)
+    }
+    const savedSettings = localStorage.getItem("settings")
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings)
+      setCurrency(settings.currency || "VND")
+    }
+  }, [])
+
+  useEffect(() => {
+    setFilteredExpenses(filterExpensesByTimeFrame(userData.expenses, timeFrame))
+  }, [userData.expenses, timeFrame])
+
+  const handleSaveUserData = (name: string) => {
+    const newUserData = {
+      ...userData,
+      name,
+    }
+    setUserData(newUserData)
+    saveUserData(newUserData)
+    setShowFirstTimeModal(false)
+  }
+
+  const handleAddExpense = (expense: Expense) => {
+    const updatedExpenses = [...userData.expenses, expense]
+    const updatedUserData = {
+      ...userData,
+      expenses: updatedExpenses,
+    }
+    setUserData(updatedUserData)
+    saveUserData(updatedUserData)
+  }
+
+  const handleDeleteExpense = (id: string) => {
+    const updatedExpenses = userData.expenses.filter(
+      (expense) => expense.id !== id
+    )
+    const updatedUserData = {
+      ...userData,
+      expenses: updatedExpenses,
+    }
+    setUserData(updatedUserData)
+    saveUserData(updatedUserData)
+  }
+
+  const handleImportData = (data: UserData) => {
+    setUserData(data)
+    saveUserData(data)
+  }
+
+  const handleExportData = () => {
+    return userData
+  }
+
+  const getChartIcon = () => {
+    switch (chartType) {
+      case "bar":
+        return <BarChart className="w-4 h-4" />
+      case "pie":
+        return <PieChart className="w-4 h-4" />
+      case "line":
+        return <LineChartIcon className="w-4 h-4" />
+    }
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+    <div className="container mx-auto py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Quản lý chi tiêu</h1>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">
+            Xin chào, {userData.name}
+          </span>
+          <Button
+            onClick={() => router.push("/compare")}
+            variant="outline"
+            size="sm"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            So sánh dữ liệu
+          </Button>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle>Thêm chi tiêu mới</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExpenseForm onAddExpense={handleAddExpense} />
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle>Tổng quan chi tiêu</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ExpenseSummary expenses={filteredExpenses} timeFrame={timeFrame} />
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs defaultValue="chart" className="mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <TabsList>
+            <TabsTrigger value="chart" className="flex items-center gap-2">
+              {getChartIcon()}
+              Biểu đồ
+            </TabsTrigger>
+            <TabsTrigger value="table">Danh sách chi tiêu</TabsTrigger>
+          </TabsList>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Thời gian:</span>
+              <select
+                className="text-sm border rounded p-1"
+                value={timeFrame}
+                onChange={(e) => setTimeFrame(e.target.value as TimeFrame)}
+              >
+                {TIME_FRAME_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">
+                Loại biểu đồ:
+              </span>
+              <select
+                className="text-sm border rounded p-1"
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value as ChartType)}
+              >
+                {CHART_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <FileImportExport
+            onImport={handleImportData}
+            onExport={handleExportData}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </div>
+
+        <TabsContent value="chart">
+          <Card>
+            <CardContent className="pt-6">
+              <ExpenseChart
+                expenses={filteredExpenses}
+                chartType={chartType}
+                timeFrame={timeFrame}
+                currency={currency}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="table">
+          <Card>
+            <CardContent className="pt-6">
+              <ExpenseTable
+                expenses={filteredExpenses}
+                onDeleteExpense={handleDeleteExpense}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {showFirstTimeModal && (
+        <FirstTimeModal open={showFirstTimeModal} onSave={handleSaveUserData} />
+      )}
     </div>
-  );
+  )
 }
