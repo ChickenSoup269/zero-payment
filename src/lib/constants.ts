@@ -50,6 +50,76 @@ export const ALL_SUBCATEGORIES = [
   "Khác",
 ]
 
+// Gợi ý mô tả dựa trên danh mục và danh mục con
+export const DESCRIPTION_SUGGESTIONS = {
+  "Chi tiêu thiết yếu": {
+    "Đi chợ siêu thị": [
+      "Đi siêu thị mua thực phẩm",
+      "Mua đồ dùng nhà bếp",
+      "Mua thực phẩm hàng tuần",
+    ],
+    "Nhà hàng": ["Tiệc tối cùng gia đình", "Ăn tối ngoài", "Ăn trưa công việc"],
+    "Chi trả hóa đơn": [
+      "Hóa đơn điện tháng",
+      "Hóa đơn nước",
+      "Hóa đơn internet",
+    ],
+    "Tiền nhà": [
+      "Tiền thuê nhà tháng",
+      "Phí quản lý chung cư",
+      "Phí bảo trì căn hộ",
+    ],
+    "Đi lại": ["Tiền xăng xe", "Vé xe buýt", "Phí gửi xe", "Đi grab"],
+    "Giúp việc": ["Tiền công giúp việc", "Dịch vụ dọn nhà", "Giặt ủi"],
+    Khác: ["Chi phí thiết yếu hàng ngày"],
+  },
+  "Mua sắm giải trí": {
+    "Vui chơi giải trí": [
+      "Vé xem phim",
+      "Vé concert",
+      "Tiền karaoke",
+      "Du lịch cuối tuần",
+    ],
+    "Mua sắm": ["Quần áo mới", "Giày dép", "Phụ kiện thời trang"],
+    "Đồ gia dụng": [
+      "Mua đồ trang trí nhà",
+      "Thiết bị điện tử",
+      "Dụng cụ nhà bếp mới",
+    ],
+    "Làm đẹp thể thao": ["Đăng ký tập gym", "Spa và làm đẹp", "Mỹ phẩm"],
+    Khác: ["Chi phí giải trí khác"],
+  },
+  "Giáo dục và y tế": {
+    "Giáo dục": ["Học phí khóa học", "Sách giáo trình", "Phí gia sư"],
+    "Y tế": ["Khám bệnh định kỳ", "Thuốc men", "Chi phí nha khoa"],
+    "Bảo hiểm": ["Phí bảo hiểm sức khỏe", "Bảo hiểm nhân thọ", "Bảo hiểm xe"],
+    Khác: ["Chi phí giáo dục hoặc y tế khác"],
+  },
+  "Tiết kiệm": {
+    "Tiết kiệm": ["Tiết kiệm hàng tháng", "Quỹ dự phòng", "Tiết kiệm mục tiêu"],
+  },
+  "Đầu tư": {
+    "Sự kiện": ["Đầu tư cho sự kiện", "Tổ chức event"],
+    "Chứng khoán": ["Mua cổ phiếu", "Quỹ đầu tư", "ETF"],
+    "Bất động sản": [
+      "Đặt cọc mua nhà",
+      "Góp vốn bất động sản",
+      "Tiền thuê đất",
+    ],
+    Quỹ: ["Đóng góp quỹ hưu trí", "Quỹ tín thác"],
+    Khác: ["Đầu tư dài hạn khác"],
+  },
+  "Chi khác": {
+    "Biếu tặng": ["Quà sinh nhật", "Quà cưới", "Tiền mừng"],
+    "Dịch vụ công": ["Phí hành chính", "Dịch vụ công chứng", "Thủ tục giấy tờ"],
+    Khác: ["Chi phí phát sinh khác"],
+  },
+  "Tiền vay": {
+    "Tiền vay": ["Trả góp vay ngân hàng", "Trả nợ", "Vay tạm người thân"],
+    Khác: ["Khoản vay khác"],
+  },
+}
+
 export const CATEGORY_COLORS = {
   "Chi tiêu thiết yếu": "#FF6B6B",
   "Mua sắm giải trí": "#4ECDC4",

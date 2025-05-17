@@ -93,8 +93,9 @@ const getNavItems = (t: (key: string) => string): NavItem[] => [
 const NavItem: React.FC<{
   item: NavItem
   isActive: boolean
+  isCollapsed: boolean
   level?: number
-}> = ({ item, isActive, level = 0 }) => {
+}> = ({ item, isActive, isCollapsed, level = 0 }) => {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -106,12 +107,13 @@ const NavItem: React.FC<{
           isActive
             ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-          level > 0 && "pl-10"
+          isCollapsed ? "justify-center" : level > 0 && "pl-10"
         )}
+        title={isCollapsed ? item.label : undefined}
       >
         {item.icon}
-        <span>{item.label}</span>
-        {item.subItems && (
+        {!isCollapsed && <span>{item.label}</span>}
+        {!isCollapsed && item.subItems && (
           <button onClick={() => setIsOpen(!isOpen)} className="ml-auto">
             {isOpen ? (
               <ChevronDown className="h-4 w-4" />
@@ -121,13 +123,14 @@ const NavItem: React.FC<{
           </button>
         )}
       </a>
-      {item.subItems && isOpen && (
+      {!isCollapsed && item.subItems && isOpen && (
         <div className="mt-1">
           {item.subItems.map((subItem) => (
             <NavItem
               key={subItem.href}
               item={subItem}
               isActive={false}
+              isCollapsed={isCollapsed}
               level={level + 1}
             />
           ))}
@@ -206,7 +209,7 @@ const AdminSidebar: React.FC = () => {
   return (
     <div
       className={cn(
-        "flex h-screen flex-col border-r bg-background transition-all duration-300",
+        "fixed top-0 left-0 h-screen flex flex-col border-r bg-background transition-all duration-300 z-50",
         isCollapsed ? "w-16" : "w-64"
       )}
     >
@@ -219,6 +222,7 @@ const AdminSidebar: React.FC = () => {
           variant="ghost"
           size="icon"
           onClick={() => setIsCollapsed(!isCollapsed)}
+          className={isCollapsed ? "mx-auto" : ""}
         >
           <ChevronRight
             className={cn("h-5 w-5", isCollapsed && "rotate-180")}
@@ -233,6 +237,7 @@ const AdminSidebar: React.FC = () => {
             key={item.href}
             item={item}
             isActive={currentPath === item.href}
+            isCollapsed={isCollapsed}
           />
         ))}
       </nav>
@@ -241,9 +246,15 @@ const AdminSidebar: React.FC = () => {
       <div className="border-t p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full justify-start">
-              <Settings className="mr-2 h-4 w-4" />
-              {!isCollapsed && t("settings")}
+            <Button
+              variant="outline"
+              className={cn(
+                "w-full justify-center",
+                !isCollapsed && "justify-start"
+              )}
+            >
+              <Settings className="h-4 w-4" />
+              {!isCollapsed && <span className="ml-2">{t("settings")}</span>}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
