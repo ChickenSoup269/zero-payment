@@ -1,7 +1,7 @@
-// src/app/tasks/page.tsx
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
+import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import {
   Card,
@@ -37,7 +37,6 @@ import { Task, TaskFilters, Priority, Status } from "@/lib/types"
 import {
   generateId,
   getCurrentDateFormatted,
-  // saveUserData,
   loadUserData,
   getPriorityColor,
   getStatusColor,
@@ -48,18 +47,134 @@ import {
   exportToJSON,
 } from "@/lib/utils"
 import { Search, Plus, Calendar, Download } from "lucide-react"
+import { debounce } from "lodash"
+
+// Define form data type
+type TaskFormData = Omit<Task, "id" | "createdAt">
+
+// NewTaskDialog component
+function NewTaskDialog({
+  isOpen,
+  onOpenChange,
+  onAddTask,
+}: {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  onAddTask: (task: Task) => void
+}) {
+  const { register, handleSubmit, reset, watch } = useForm<TaskFormData>({
+    defaultValues: {
+      title: "",
+      description: "",
+      priority: "normal" as Priority,
+      status: "todo" as Status,
+    },
+  })
+
+  const onSubmit = (data: TaskFormData) => {
+    const task: Task = {
+      id: generateId(),
+      ...data,
+      createdAt: getCurrentDateFormatted(),
+      // Format dueDate only if provided
+      dueDate: data.dueDate
+        ? formatDate(
+            new Date(data.dueDate)
+              .toLocaleDateString("en-GB")
+              .split("/")
+              .reverse()
+              .join("-")
+          )
+        : undefined,
+    }
+    onAddTask(task)
+    reset()
+    onOpenChange(false)
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="mr-2 h-4 w-4" />
+          Thêm công việc
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Thêm công việc mới</DialogTitle>
+          <DialogDescription>
+            Điền thông tin công việc mới của bạn
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Tiêu đề</Label>
+            <Input
+              id="title"
+              placeholder="Nhập tiêu đề công việc"
+              {...register("title", { required: true })}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Mô tả</Label>
+            <Textarea
+              id="description"
+              placeholder="Mô tả chi tiết công việc"
+              {...register("description")}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="priority">Ưu tiên</Label>
+              <Select value={watch("priority")} {...register("priority")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn mức độ ưu tiên" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="normal">Cần làm</SelectItem>
+                  <SelectItem value="tomorrow">Cần làm vào ngày mai</SelectItem>
+                  <SelectItem value="urgent">Cần gấp</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="status">Trạng thái</Label>
+              <Select value={watch("status")} {...register("status")}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Chọn trạng thái" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todo">Cần làm</SelectItem>
+                  <SelectItem value="preparing">Chuẩn bị</SelectItem>
+                  <SelectItem value="in-progress">Đang làm</SelectItem>
+                  <SelectItem value="completed">Hoàn thành</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="dueDate">Hạn cuối (nếu có)</Label>
+            <div className="flex items-center gap-2">
+              <Input id="dueDate" type="date" {...register("dueDate")} />
+              <Calendar className="h-4 w-4 text-gray-500" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={!watch("title")}>
+              Thêm công việc
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export default function TasksPage() {
-  //   const router = useRouter()
+  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
-  const [newTask, setNewTask] = useState<Omit<Task, "id">>({
-    title: "",
-    description: "",
-    priority: "normal",
-    status: "todo",
-    createdAt: getCurrentDateFormatted(),
-  })
   const [filters, setFilters] = useState<TaskFilters>({
     priority: "all",
     status: "all",
@@ -73,11 +188,9 @@ export default function TasksPage() {
   useEffect(() => {
     const userData = loadUserData()
     if (userData && userData.expenses) {
-      // User has previously used the app
       setIsFirstTime(false)
     }
 
-    // Try to load tasks from localStorage
     const savedTasks = localStorage.getItem("tasks")
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks))
@@ -89,17 +202,14 @@ export default function TasksPage() {
   useEffect(() => {
     let result = [...tasks]
 
-    // Apply priority filter
     if (filters.priority !== "all") {
       result = result.filter((task) => task.priority === filters.priority)
     }
 
-    // Apply status filter
     if (filters.status !== "all") {
       result = result.filter((task) => task.status === filters.status)
     }
 
-    // Apply search filter
     if (filters.searchTerm) {
       const term = filters.searchTerm.toLowerCase()
       result = result.filter(
@@ -119,33 +229,24 @@ export default function TasksPage() {
     }
   }, [tasks])
 
+  // Debounce search input
+  const debouncedSetSearchTerm = useCallback(
+    debounce((value: string) => {
+      setFilters((prev) => ({ ...prev, searchTerm: value }))
+    }, 300),
+    []
+  )
+
   const handleCreateFile = () => {
     if (!fileName) return
 
-    // Create a new file in localStorage with the given name
     localStorage.setItem("taskFileName", fileName)
-
-    // Save initial empty tasks array
     localStorage.setItem("tasks", JSON.stringify([]))
-
     setIsFirstTime(false)
   }
 
-  const handleAddTask = () => {
-    const task: Task = {
-      id: generateId(),
-      ...newTask,
-    }
-
+  const handleAddTask = (task: Task) => {
     setTasks((prev) => [...prev, task])
-    setNewTask({
-      title: "",
-      description: "",
-      priority: "normal",
-      status: "todo",
-      createdAt: getCurrentDateFormatted(),
-    })
-    setIsNewTaskDialogOpen(false)
   }
 
   const handleUpdateTaskStatus = (id: string, status: Status) => {
@@ -230,129 +331,11 @@ export default function TasksPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quản lý công việc</h1>
         <div className="flex gap-2">
-          <Dialog
-            open={isNewTaskDialogOpen}
+          <NewTaskDialog
+            isOpen={isNewTaskDialogOpen}
             onOpenChange={setIsNewTaskDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Thêm công việc
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>Thêm công việc mới</DialogTitle>
-                <DialogDescription>
-                  Điền thông tin công việc mới của bạn
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="title">Tiêu đề</Label>
-                  <Input
-                    id="title"
-                    placeholder="Nhập tiêu đề công việc"
-                    value={newTask.title}
-                    onChange={(e) =>
-                      setNewTask((prev) => ({ ...prev, title: e.target.value }))
-                    }
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="description">Mô tả</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Mô tả chi tiết công việc"
-                    value={newTask.description}
-                    onChange={(e) =>
-                      setNewTask((prev) => ({
-                        ...prev,
-                        description: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="priority">Ưu tiên</Label>
-                    <Select
-                      value={newTask.priority}
-                      onValueChange={(value: Priority) =>
-                        setNewTask((prev) => ({ ...prev, priority: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn mức độ ưu tiên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="normal">Cần làm</SelectItem>
-                        <SelectItem value="tomorrow">
-                          Cần làm vào ngày mai
-                        </SelectItem>
-                        <SelectItem value="urgent">Cần gấp</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="status">Trạng thái</Label>
-                    <Select
-                      value={newTask.status}
-                      onValueChange={(value: Status) =>
-                        setNewTask((prev) => ({ ...prev, status: value }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Chọn trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="todo">Cần làm</SelectItem>
-                        <SelectItem value="preparing">Chuẩn bị</SelectItem>
-                        <SelectItem value="in-progress">Đang làm</SelectItem>
-                        <SelectItem value="completed">Hoàn thành</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="dueDate">Hạn cuối (nếu có)</Label>
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="dueDate"
-                      type="date"
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          const date = new Date(e.target.value)
-                          const day = String(date.getDate()).padStart(2, "0")
-                          const month = String(date.getMonth() + 1).padStart(
-                            2,
-                            "0"
-                          )
-                          const year = String(date.getFullYear()).slice(2)
-                          const formattedDate = `${day}-${month}-${year}`
-                          setNewTask((prev) => ({
-                            ...prev,
-                            dueDate: formattedDate,
-                          }))
-                        } else {
-                          setNewTask((prev) => {
-                            const { dueDate, ...rest } = prev
-                            return rest
-                          })
-                        }
-                      }}
-                    />
-                    <Calendar className="h-4 w-4 text-gray-500" />
-                  </div>
-                </div>
-              </div>
-              <DialogFooter>
-                <Button onClick={handleAddTask} disabled={!newTask.title}>
-                  Thêm công việc
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+            onAddTask={handleAddTask}
+          />
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleExportCSV}>
               <Download className="mr-2 h-4 w-4" />
@@ -373,10 +356,7 @@ export default function TasksPage() {
             <Input
               placeholder="Tìm kiếm công việc..."
               className="pl-10"
-              value={filters.searchTerm}
-              onChange={(e) =>
-                setFilters((prev) => ({ ...prev, searchTerm: e.target.value }))
-              }
+              onChange={(e) => debouncedSetSearchTerm(e.target.value)}
             />
           </div>
           <div className="flex gap-4">
