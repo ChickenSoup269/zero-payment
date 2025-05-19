@@ -7,17 +7,14 @@ import {
   LayoutDashboard,
   Users,
   Settings,
-  LogOut,
   ChevronRight,
   ChevronDown,
   BarChart2,
   FileText,
   Sun,
-  Moon,
   Palette,
   Type,
   Globe,
-  DollarSign,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -183,10 +180,6 @@ const AdminSidebar: React.FC = () => {
     setSettings((prev) => ({ ...prev, font }))
   }
 
-  const handleCurrencyChange = (currency: "VND" | "USD") => {
-    setSettings((prev) => ({ ...prev, currency }))
-  }
-
   // Utility functions for theme
   const getColorValue = (color: string) => {
     const colors = {
@@ -324,22 +317,6 @@ const AdminSidebar: React.FC = () => {
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => changeLanguage("en")}>
                   English
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuSub>
-
-            {/* Currency */}
-            <DropdownMenuSub>
-              <DropdownMenuSubTrigger>
-                <DollarSign className="mr-2 h-4 w-4" />
-                {t("currency")}
-              </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => handleCurrencyChange("VND")}>
-                  VND
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleCurrencyChange("USD")}>
-                  USD
                 </DropdownMenuItem>
               </DropdownMenuSubContent>
             </DropdownMenuSub>

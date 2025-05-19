@@ -120,7 +120,7 @@ export function ExpenseChart({
             </PieChart>
           </ResponsiveContainer>
         )
-
+      // biểu đồ cột
       case "bar":
         return (
           <ResponsiveContainer width="100%" height={400}>
