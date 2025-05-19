@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useForm } from "react-hook-form"
-import { useRouter } from "next/navigation"
 import {
   Card,
   CardContent,
@@ -33,11 +32,19 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Task, TaskFilters, Priority, Status } from "@/lib/types"
 import {
   generateId,
   getCurrentDateFormatted,
-  loadUserData,
+  // loadUserData,
   getPriorityColor,
   getStatusColor,
   getPriorityLabel,
@@ -46,11 +53,28 @@ import {
   taskToCSV,
   exportToJSON,
 } from "@/lib/utils"
-import { Search, Plus, Calendar, Download } from "lucide-react"
+import {
+  Search,
+  Plus,
+  Calendar,
+  Download,
+  FolderPlus,
+  File,
+  Trash2,
+  FileJson,
+  ChevronDown,
+} from "lucide-react"
 import { debounce } from "lodash"
 
 // Define form data type
 type TaskFormData = Omit<Task, "id" | "createdAt">
+
+// Define file type
+type TaskFile = {
+  id: string
+  name: string
+  createdAt: string
+}
 
 // NewTaskDialog component
 function NewTaskDialog({
@@ -171,8 +195,122 @@ function NewTaskDialog({
   )
 }
 
+// New File Dialog Component
+function NewFileDialog({
+  isOpen,
+  onOpenChange,
+  onCreateFile,
+}: {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  onCreateFile: (fileName: string) => void
+}) {
+  const [fileName, setFileName] = useState("")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (fileName) {
+      onCreateFile(fileName)
+      setFileName("")
+      onOpenChange(false)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <FolderPlus className="mr-2 h-4 w-4" />
+          Tạo file mới
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Tạo file mới</DialogTitle>
+          <DialogDescription>
+            Nhập tên cho file công việc mới của bạn
+          </DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="new-file-name">Tên file</Label>
+            <Input
+              id="new-file-name"
+              placeholder="Nhập tên file (không cần .json)"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={!fileName}>
+              Tạo file
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// File Select Component
+function FileSelect({
+  files,
+  currentFile,
+  onFileSelect,
+  onDeleteFile,
+}: {
+  files: TaskFile[]
+  currentFile: string
+  onFileSelect: (fileId: string) => void
+  onDeleteFile: (fileId: string) => void
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" className="flex gap-2 items-center">
+          <FileJson className="h-4 w-4" />
+          {files.find((f) => f.id === currentFile)?.name || "Chọn file"}
+          <ChevronDown className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Danh sách file</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {files.length > 0 ? (
+          files.map((file) => (
+            <DropdownMenuItem
+              key={file.id}
+              className="flex justify-between"
+              onClick={() => onFileSelect(file.id)}
+            >
+              <div className="flex items-center">
+                <File className="mr-2 h-4 w-4" />
+                <span>{file.name}</span>
+              </div>
+              {files.length > 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDeleteFile(file.id)
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                </Button>
+              )}
+            </DropdownMenuItem>
+          ))
+        ) : (
+          <DropdownMenuItem disabled>Không có file nào</DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 export default function TasksPage() {
-  const router = useRouter()
   const [tasks, setTasks] = useState<Task[]>([])
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([])
   const [filters, setFilters] = useState<TaskFilters>({
@@ -181,22 +319,40 @@ export default function TasksPage() {
     searchTerm: "",
   })
   const [isFirstTime, setIsFirstTime] = useState(true)
-  const [fileName, setFileName] = useState("")
+  const [files, setFiles] = useState<TaskFile[]>([])
+  const [currentFileId, setCurrentFileId] = useState<string>("")
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false)
+  const [isNewFileDialogOpen, setIsNewFileDialogOpen] = useState(false)
+  const [fileName, setFileName] = useState("")
 
-  // Load tasks on initial render
-  useEffect(() => {
-    const userData = loadUserData()
-    if (userData && userData.expenses) {
-      setIsFirstTime(false)
-    }
-
-    const savedTasks = localStorage.getItem("tasks")
+  // Helper function to load tasks for a specific file
+  const loadTasksForFile = useCallback((fileId: string) => {
+    const savedTasks = localStorage.getItem(`tasks_${fileId}`)
     if (savedTasks) {
       setTasks(JSON.parse(savedTasks))
-      setIsFirstTime(false)
+    } else {
+      setTasks([])
     }
+    setCurrentFileId(fileId)
   }, [])
+
+  // Load files and tasks on initial render
+  useEffect(() => {
+    const savedFiles = localStorage.getItem("taskFiles")
+
+    if (savedFiles) {
+      const parsedFiles = JSON.parse(savedFiles) as TaskFile[]
+      setFiles(parsedFiles)
+
+      // If there are files, load the first one
+      if (parsedFiles.length > 0) {
+        const lastActiveFileId =
+          localStorage.getItem("lastActiveFileId") || parsedFiles[0].id
+        loadTasksForFile(lastActiveFileId)
+        setIsFirstTime(false)
+      }
+    }
+  }, [loadTasksForFile])
 
   // Update filtered tasks when tasks or filters change
   useEffect(() => {
@@ -224,10 +380,17 @@ export default function TasksPage() {
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
-    if (tasks.length > 0) {
-      localStorage.setItem("tasks", JSON.stringify(tasks))
+    if (currentFileId) {
+      localStorage.setItem(`tasks_${currentFileId}`, JSON.stringify(tasks))
     }
-  }, [tasks])
+  }, [tasks, currentFileId])
+
+  // Save current file id to localStorage
+  useEffect(() => {
+    if (currentFileId) {
+      localStorage.setItem("lastActiveFileId", currentFileId)
+    }
+  }, [currentFileId])
 
   // Debounce search input
   const debouncedSetSearchTerm = useCallback(
@@ -237,12 +400,58 @@ export default function TasksPage() {
     []
   )
 
-  const handleCreateFile = () => {
+  const handleCreateFirstFile = () => {
     if (!fileName) return
 
-    localStorage.setItem("taskFileName", fileName)
-    localStorage.setItem("tasks", JSON.stringify([]))
+    const newFileId = generateId()
+    const newFile: TaskFile = {
+      id: newFileId,
+      name: fileName,
+      createdAt: getCurrentDateFormatted(),
+    }
+
+    setFiles([newFile])
+    localStorage.setItem("taskFiles", JSON.stringify([newFile]))
+    localStorage.setItem(`tasks_${newFileId}`, JSON.stringify([]))
+    setCurrentFileId(newFileId)
     setIsFirstTime(false)
+  }
+
+  const handleCreateFile = (fileName: string) => {
+    const newFileId = generateId()
+    const newFile: TaskFile = {
+      id: newFileId,
+      name: fileName,
+      createdAt: getCurrentDateFormatted(),
+    }
+
+    const updatedFiles = [...files, newFile]
+    setFiles(updatedFiles)
+    localStorage.setItem("taskFiles", JSON.stringify(updatedFiles))
+    localStorage.setItem(`tasks_${newFileId}`, JSON.stringify([]))
+    setCurrentFileId(newFileId)
+  }
+
+  const handleFileSelect = (fileId: string) => {
+    loadTasksForFile(fileId)
+  }
+
+  const handleDeleteFile = (fileId: string) => {
+    // Don't allow deleting if it's the only file
+    if (files.length <= 1) return
+
+    const updatedFiles = files.filter((f) => f.id !== fileId)
+    setFiles(updatedFiles)
+    localStorage.setItem("taskFiles", JSON.stringify(updatedFiles))
+
+    // Remove tasks for this file
+    localStorage.removeItem(`tasks_${fileId}`)
+
+    // If the current file is being deleted, switch to another file
+    if (fileId === currentFileId) {
+      const nextFileId = updatedFiles[0].id
+      loadTasksForFile(nextFileId)
+    }
   }
 
   const handleAddTask = (task: Task) => {
@@ -265,7 +474,12 @@ export default function TasksPage() {
     const link = document.createElement("a")
     const url = URL.createObjectURL(blob)
     link.setAttribute("href", url)
-    link.setAttribute("download", `tasks-${getCurrentDateFormatted()}.csv`)
+    link.setAttribute(
+      "download",
+      `${
+        files.find((f) => f.id === currentFileId)?.name || "tasks"
+      }-${getCurrentDateFormatted()}.csv`
+    )
     link.style.visibility = "hidden"
     document.body.appendChild(link)
     link.click()
@@ -280,7 +494,7 @@ export default function TasksPage() {
     link.setAttribute("href", url)
     link.setAttribute(
       "download",
-      `${localStorage.getItem("taskFileName") || "tasks"}.json`
+      `${files.find((f) => f.id === currentFileId)?.name || "tasks"}.json`
     )
     link.style.visibility = "hidden"
     document.body.appendChild(link)
@@ -296,7 +510,7 @@ export default function TasksPage() {
             <CardTitle>Chào mừng đến với Quản lý công việc</CardTitle>
             <CardDescription>
               Đây là lần đầu tiên bạn sử dụng ứng dụng này. Vui lòng đặt tên cho
-              file lưu trữ công việc của bạn.
+              file lưu trữ công việc đầu tiên của bạn.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -315,7 +529,7 @@ export default function TasksPage() {
           <CardFooter>
             <Button
               className="w-full"
-              onClick={handleCreateFile}
+              onClick={handleCreateFirstFile}
               disabled={!fileName}
             >
               Bắt đầu
@@ -331,6 +545,17 @@ export default function TasksPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Quản lý công việc</h1>
         <div className="flex gap-2">
+          <FileSelect
+            files={files}
+            currentFile={currentFileId}
+            onFileSelect={handleFileSelect}
+            onDeleteFile={handleDeleteFile}
+          />
+          <NewFileDialog
+            isOpen={isNewFileDialogOpen}
+            onOpenChange={setIsNewFileDialogOpen}
+            onCreateFile={handleCreateFile}
+          />
           <NewTaskDialog
             isOpen={isNewTaskDialogOpen}
             onOpenChange={setIsNewTaskDialogOpen}
