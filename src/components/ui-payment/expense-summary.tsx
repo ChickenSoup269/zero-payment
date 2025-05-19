@@ -7,18 +7,39 @@ import {
   calculateTotalExpenses,
   formatCurrency,
   groupExpensesByCategory,
-  //  filterExpensesByTimeFrame,
 } from "@/lib/utils"
 import { CATEGORY_COLORS } from "@/lib/constants"
-import { ArrowUpIcon, ArrowDownIcon } from "lucide-react"
+import {
+  ArrowUpIcon,
+  ArrowDownIcon,
+  ShoppingBagIcon,
+  HomeIcon,
+  BookOpenIcon,
+  PiggyBankIcon,
+  TrendingUpIcon,
+  GiftIcon,
+  CoinsIcon,
+  ShoppingCartIcon,
+} from "lucide-react"
 
 interface ExpenseSummaryProps {
   expenses: Expense[]
   timeFrame: TimeFrame
 }
 
+// Map của danh mục chính đến icon tương ứng
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Chi tiêu thiết yếu": <ShoppingCartIcon className="w-5 h-5 text-white" />,
+  "Mua sắm giải trí": <ShoppingBagIcon className="w-5 h-5 text-white" />,
+  "Giáo dục và y tế": <BookOpenIcon className="w-5 h-5 text-white" />,
+  "Tiết kiệm": <PiggyBankIcon className="w-5 h-5 text-white" />,
+  "Đầu tư": <TrendingUpIcon className="w-5 h-5 text-white" />,
+  "Chi khác": <GiftIcon className="w-5 h-5 text-white" />,
+  "Tiền vay": <CoinsIcon className="w-5 h-5 text-white" />,
+}
+
 export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
-  const [previousPeriodExpenses, setPreviousPeriodExpenses] = React.useState<
+  const [previousPeriodExpenses, setPreviousPreviodExpenses] = React.useState<
     Expense[]
   >([])
 
@@ -55,7 +76,7 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
       )
     })
 
-    setPreviousPeriodExpenses(previousPeriod)
+    setPreviousPreviodExpenses(previousPeriod)
   }, [expenses, timeFrame])
 
   const totalExpenses = calculateTotalExpenses(expenses)
@@ -73,7 +94,7 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
   // Sort categories by amount (descending)
   const sortedCategories = Object.entries(categoriesData)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 3) // Take top 3
+    .slice(0, 9) // lấy top 9 danh mục
 
   // Time frame label
   const timeFrameLabel = {
@@ -86,7 +107,7 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
+        <Card className="overflow-hidden border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
             <div className="text-sm text-muted-foreground">
               Tổng chi tiêu {timeFrameLabel}
@@ -119,28 +140,48 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
           </CardContent>
         </Card>
 
-        {sortedCategories.map(([category, amount]) => (
-          <Card key={category}>
-            <CardContent className="pt-6">
-              <div className="flex items-center">
-                <div
-                  className="w-3 h-3 rounded-full mr-2"
-                  style={{
-                    backgroundColor:
-                      CATEGORY_COLORS[
-                        category as keyof typeof CATEGORY_COLORS
-                      ] || "#888",
-                  }}
-                />
-                <div className="text-sm text-muted-foreground">{category}</div>
-              </div>
-              <div className="text-2xl font-bold">{formatCurrency(amount)}</div>
-              <div className="text-sm text-muted-foreground mt-2">
-                {((amount / totalExpenses) * 100).toFixed(1)}% tổng chi tiêu
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+        {sortedCategories.map(([category, amount]) => {
+          const categoryColor =
+            CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || "#888"
+          return (
+            <Card
+              key={category}
+              className="overflow-hidden border-l-4"
+              style={{ borderLeftColor: categoryColor }}
+            >
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div
+                      className="w-8 h-8 rounded-full mr-2 flex items-center justify-center"
+                      style={{ backgroundColor: categoryColor }}
+                    >
+                      {CATEGORY_ICONS[category] || (
+                        <ShoppingBagIcon className="w-5 h-5 text-white" />
+                      )}
+                    </div>
+                    <div className="text-sm font-medium">{category}</div>
+                  </div>
+                </div>
+                <div className="text-2xl font-bold mt-2">
+                  {formatCurrency(amount)}
+                </div>
+                <div className="text-sm text-muted-foreground mt-1">
+                  {((amount / totalExpenses) * 100).toFixed(1)}% tổng chi tiêu
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div
+                    className="h-1.5 rounded-full"
+                    style={{
+                      width: `${(amount / totalExpenses) * 100}%`,
+                      backgroundColor: categoryColor,
+                    }}
+                  ></div>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
       </div>
     </div>
   )

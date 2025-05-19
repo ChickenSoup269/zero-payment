@@ -227,7 +227,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
               <FormLabel>Số tiền (VND)</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="1.000.000"
+                  placeholder="0"
                   value={
                     field.value ? formatCurrency(field.value.toString()) : ""
                   }
