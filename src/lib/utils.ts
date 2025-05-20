@@ -114,22 +114,48 @@ export function generateUniqueId(): string {
   )
 }
 
-export function saveUserData(userData: UserData): void {
+export function saveUserData(
+  userData: UserData,
+  fileName: string = "default"
+): void {
   if (typeof window !== "undefined") {
     const updatedUserData = {
       ...userData,
       lastUpdated: new Date().toISOString(),
     }
-    localStorage.setItem("userData", JSON.stringify(updatedUserData))
+    localStorage.setItem(
+      `expense_data_${fileName}`,
+      JSON.stringify(updatedUserData)
+    )
   }
 }
 
-export function loadUserData(): UserData | null {
+export function loadUserData(fileName: string = "default"): UserData | null {
   if (typeof window !== "undefined") {
-    const userData = localStorage.getItem("userData")
+    const userData = localStorage.getItem(`expense_data_${fileName}`)
     return userData ? JSON.parse(userData) : null
   }
   return null
+}
+
+export function deleteUserData(fileName: string): void {
+  if (typeof window !== "undefined" && fileName !== "default") {
+    localStorage.removeItem(`expense_data_${fileName}`)
+  }
+}
+
+export function getAvailableFiles(): string[] {
+  if (typeof window !== "undefined") {
+    const files = localStorage.getItem("expense_files")
+    return files ? JSON.parse(files) : ["default"]
+  }
+  return ["default"]
+}
+
+export function saveAvailableFiles(files: string[]): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("expense_files", JSON.stringify(files))
+  }
 }
 
 export function downloadJsonFile(data: any, filename: string): void {

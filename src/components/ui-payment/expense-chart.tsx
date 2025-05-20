@@ -107,7 +107,7 @@ export function ExpenseChart({
       case "multiple-bar":
         // Nhóm dữ liệu theo danh mục cho biểu đồ cột nhiều cột
         const categoryData = groupExpensesByCategory(expenses)
-        const subcategoryData = groupExpensesBySubcategory(expenses)
+        // const subcategoryData = groupExpensesBySubcategory(expenses)
 
         // Tạo dữ liệu theo từng khoảng thời gian
         const timeData = groupExpensesByDate(expenses, timeFrame)
