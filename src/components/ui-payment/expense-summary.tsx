@@ -13,18 +13,19 @@ import {
   ArrowUpIcon,
   ArrowDownIcon,
   ShoppingBagIcon,
-  HomeIcon,
   BookOpenIcon,
   PiggyBankIcon,
   TrendingUpIcon,
   GiftIcon,
   CoinsIcon,
   ShoppingCartIcon,
+  CalendarIcon,
 } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 interface ExpenseSummaryProps {
   expenses: Expense[]
-  timeFrame: TimeFrame
+  defaultTimeFrame?: TimeFrame
 }
 
 // Map của danh mục chính đến icon tương ứng
@@ -38,7 +39,11 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "Tiền vay": <CoinsIcon className="w-5 h-5 text-white" />,
 }
 
-export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
+export function ExpenseSummary({
+  expenses,
+  defaultTimeFrame = "month",
+}: ExpenseSummaryProps) {
+  const [timeFrame, setTimeFrame] = React.useState<TimeFrame>(defaultTimeFrame)
   const [previousPeriodExpenses, setPreviousPreviodExpenses] = React.useState<
     Expense[]
   >([])
@@ -79,7 +84,41 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
     setPreviousPreviodExpenses(previousPeriod)
   }, [expenses, timeFrame])
 
-  const totalExpenses = calculateTotalExpenses(expenses)
+  // Filter expenses based on selected timeFrame
+  const filteredExpenses = React.useMemo(() => {
+    const now = new Date()
+    const startDate = new Date()
+
+    switch (timeFrame) {
+      case "week":
+        // Bắt đầu từ thứ 2 của tuần này
+        const dayOfWeek = now.getDay()
+        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
+        startDate.setDate(diff)
+        startDate.setHours(0, 0, 0, 0)
+        break
+      case "month":
+        // Bắt đầu từ ngày 1 của tháng hiện tại
+        startDate.setDate(1)
+        startDate.setHours(0, 0, 0, 0)
+        break
+      case "year":
+        // Bắt đầu từ ngày 1 tháng 1 của năm hiện tại
+        startDate.setMonth(0, 1)
+        startDate.setHours(0, 0, 0, 0)
+        break
+      case "all":
+      default:
+        // Tất cả thời gian
+        return expenses
+    }
+
+    return expenses.filter(
+      (expense) => new Date(expense.timestamp) >= startDate
+    )
+  }, [expenses, timeFrame])
+
+  const totalExpenses = calculateTotalExpenses(filteredExpenses)
   const previousTotalExpenses = calculateTotalExpenses(previousPeriodExpenses)
 
   // Calculate percentage change
@@ -89,7 +128,7 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
       : ((totalExpenses - previousTotalExpenses) / previousTotalExpenses) * 100
 
   // Group expenses by category
-  const categoriesData = groupExpensesByCategory(expenses)
+  const categoriesData = groupExpensesByCategory(filteredExpenses)
 
   // Sort categories by amount (descending)
   const sortedCategories = Object.entries(categoriesData)
@@ -106,6 +145,25 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
 
   return (
     <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+        <h2 className="text-2xl font-bold mb-2 sm:mb-0">Tổng quan chi tiêu</h2>
+        <div className="flex items-center">
+          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+          <Tabs
+            value={timeFrame}
+            onValueChange={(value) => setTimeFrame(value as TimeFrame)}
+            className="w-full"
+          >
+            <TabsList>
+              <TabsTrigger value="week">Tuần này</TabsTrigger>
+              <TabsTrigger value="month">Tháng này</TabsTrigger>
+              <TabsTrigger value="year">Năm này</TabsTrigger>
+              <TabsTrigger value="all">Tất cả</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="overflow-hidden border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
@@ -140,48 +198,59 @@ export function ExpenseSummary({ expenses, timeFrame }: ExpenseSummaryProps) {
           </CardContent>
         </Card>
 
-        {sortedCategories.map(([category, amount]) => {
-          const categoryColor =
-            CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || "#888"
-          return (
-            <Card
-              key={category}
-              className="overflow-hidden border-l-4"
-              style={{ borderLeftColor: categoryColor }}
-            >
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div
-                      className="w-8 h-8 rounded-full mr-2 flex items-center justify-center"
-                      style={{ backgroundColor: categoryColor }}
-                    >
-                      {CATEGORY_ICONS[category] || (
-                        <ShoppingBagIcon className="w-5 h-5 text-white" />
-                      )}
+        {sortedCategories.length > 0 ? (
+          sortedCategories.map(([category, amount]) => {
+            const categoryColor =
+              CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
+              "#888"
+            return (
+              <Card
+                key={category}
+                className="overflow-hidden border-l-4"
+                style={{ borderLeftColor: categoryColor }}
+              >
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div
+                        className="w-8 h-8 rounded-full mr-2 flex items-center justify-center"
+                        style={{ backgroundColor: categoryColor }}
+                      >
+                        {CATEGORY_ICONS[category] || (
+                          <ShoppingBagIcon className="w-5 h-5 text-white" />
+                        )}
+                      </div>
+                      <div className="text-sm font-medium">{category}</div>
                     </div>
-                    <div className="text-sm font-medium">{category}</div>
                   </div>
-                </div>
-                <div className="text-2xl font-bold mt-2">
-                  {formatCurrency(amount)}
-                </div>
-                <div className="text-sm text-muted-foreground mt-1">
-                  {((amount / totalExpenses) * 100).toFixed(1)}% tổng chi tiêu
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
-                  <div
-                    className="h-1.5 rounded-full"
-                    style={{
-                      width: `${(amount / totalExpenses) * 100}%`,
-                      backgroundColor: categoryColor,
-                    }}
-                  ></div>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+                  <div className="text-2xl font-bold mt-2">
+                    {formatCurrency(amount)}
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    {((amount / totalExpenses) * 100).toFixed(1)}% tổng chi tiêu
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                    <div
+                      className="h-1.5 rounded-full"
+                      style={{
+                        width: `${(amount / totalExpenses) * 100}%`,
+                        backgroundColor: categoryColor,
+                      }}
+                    ></div>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })
+        ) : (
+          <Card className="col-span-1 md:col-span-2 lg:col-span-3">
+            <CardContent className="pt-6 flex items-center justify-center h-32">
+              <p className="text-muted-foreground text-center">
+                Không có dữ liệu chi tiêu trong {timeFrameLabel}
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   )
