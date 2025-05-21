@@ -144,7 +144,7 @@ export function ExpenseSummary({
   }[timeFrame]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 ">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <h2 className="text-2xl font-bold mb-2 sm:mb-0">Tổng quan chi tiêu</h2>
         <div className="flex items-center">

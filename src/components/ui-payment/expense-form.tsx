@@ -1,7 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import { Button } from "@/components/ui/button"
@@ -23,16 +22,8 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Expense } from "@/lib/types"
-import {
-  EXPENSE_CATEGORIES,
-  // CATEGORY_COLORS,
-  DESCRIPTION_SUGGESTIONS,
-} from "@/lib/constants"
-import {
-  getCurrentDateFormatted,
-  //  getCategoryFromSubcategory,
-  generateUniqueId,
-} from "@/lib/utils"
+import { EXPENSE_CATEGORIES, DESCRIPTION_SUGGESTIONS } from "@/lib/constants"
+import { getCurrentDateFormatted, generateUniqueId } from "@/lib/utils"
 import {
   Popover,
   PopoverContent,
@@ -138,7 +129,26 @@ type ExpenseFormProps = {
 
 export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: (data) => {
+      try {
+        return { values: formSchema.parse(data), errors: {} }
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          const formattedErrors = error.errors.reduce((acc, err) => {
+            const path = err.path.join(".")
+            return {
+              ...acc,
+              [path]: { message: err.message, type: "validation" },
+            }
+          }, {})
+          return { values: {}, errors: formattedErrors }
+        }
+        return {
+          values: {},
+          errors: { root: { message: "Validation failed", type: "root" } },
+        }
+      }
+    },
     defaultValues: {
       amount: 0,
       category: "",
@@ -395,7 +405,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
             name="date"
             render={({ field }) => (
               <FormItem className="flex flex-col">
-                <FormLabel>Ngày chi tiêu</FormLabel>
+                <FormLabel>Ngày</FormLabel>
                 <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
                   <PopoverTrigger asChild>
                     <FormControl>
@@ -403,7 +413,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                         variant="outline"
                         className="w-full pl-3 text-left font-normal flex justify-between items-center"
                       >
-                        {field.value}
+                        {field.value || "Chọn ngày"}
                         <CalendarIcon className="h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -414,11 +424,12 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                       selected={new Date(field.value)}
                       onSelect={(date) => {
                         if (date) {
-                          field.onChange(format(date, "dd-MM-yyyy"))
+                          field.onChange(format(date, "yyyy-MM-dd"))
                           setCalendarOpen(false)
                         }
                       }}
                       locale={vi}
+                      disabled={(date) => date > new Date()}
                       initialFocus
                     />
                   </PopoverContent>
@@ -433,7 +444,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
             name="time"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Giờ chi tiêu</FormLabel>
+                <FormLabel>Thời gian</FormLabel>
                 <div className="relative">
                   <FormControl>
                     <Input type="time" {...field} className="pl-10" />
@@ -446,12 +457,10 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
           />
         </div>
 
-        <Button type="submit" className="w-full">
-          Thêm chi tiêu
+        <Button type="submit" className="w-full mt-6">
+          Lưu chi tiêu
         </Button>
       </form>
     </Form>
   )
 }
-
-// xin chào các bạn cách này để dành hôm nào fix thui

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FirstTimeModal } from "@/components/ui-payment/first-time-modal"
-import { ExpenseForm } from "@/components/ui-payment/expense-form"
+import { ExpenseFormDialog } from "@/components/ui-payment/expense-form-dialog"
 import { ExpenseTable } from "@/components/ui-payment/expense-table"
 import { ExpenseChart } from "@/components/ui-payment/expense-chart"
 import { ExpenseSummary } from "@/components/ui-payment/expense-summary"
@@ -191,6 +191,7 @@ export default function ExpenseDashboard() {
             >
               Tạo file mới
             </Button>
+            <ExpenseFormDialog onAddExpense={handleAddExpense} />
             <Button
               onClick={handleDeleteFile}
               variant="destructive"
@@ -210,17 +211,8 @@ export default function ExpenseDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid lg:grid-cols-1 md:grid-cols-2 sm:grid-cols-3  gap-6 mb-6 ">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Thêm chi tiêu mới</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ExpenseForm onAddExpense={handleAddExpense} />
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle>Tổng quan chi tiêu</CardTitle>
           </CardHeader>
