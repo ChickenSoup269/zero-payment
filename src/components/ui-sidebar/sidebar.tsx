@@ -5,12 +5,12 @@ import { cn } from "@/lib/utils"
 import { useTranslation } from "react-i18next"
 import {
   LayoutDashboard,
-  Users,
+  //Users,
   Settings,
   ChevronRight,
   ChevronDown,
   BarChart2,
-  FileText,
+  // FileText,
   Sun,
   Palette,
   Type,
@@ -47,42 +47,19 @@ interface Settings {
 // Navigation items
 const getNavItems = (t: (key: string) => string): NavItem[] => [
   {
-    label: t("dashboard"),
+    label: t("Dashboard"),
     icon: <LayoutDashboard className="h-5 w-5" />,
     href: "/",
   },
   {
-    label: t("expenses"),
-    icon: <Users className="h-5 w-5" />,
-    href: "/expenses",
-    subItems: [
-      { label: t("all_expenses"), href: "/admin/expenses/all", icon: null },
-      {
-        label: t("categories"),
-        href: "/admin/expenses/categories",
-        icon: null,
-      },
-    ],
-  },
-  {
-    label: t("analytics"),
+    label: t("Tasks"),
     icon: <BarChart2 className="h-5 w-5" />,
-    href: "/admin/analytics",
+    href: "/tasks",
   },
   {
-    label: t("reports"),
-    icon: <FileText className="h-5 w-5" />,
-    href: "/admin/reports",
-  },
-  {
-    label: t("compare"),
+    label: t("Giá vàng"),
     icon: <BarChart2 className="h-5 w-5" />,
-    href: "/compare",
-  },
-  {
-    label: t("settings"),
-    icon: <Settings className="h-5 w-5" />,
-    href: "/admin/settings",
+    href: "/lmao",
   },
 ]
 
