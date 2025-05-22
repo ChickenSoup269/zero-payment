@@ -232,40 +232,6 @@ export default function ExpenseDashboard() {
             <TabsTrigger value="table">Danh sách chi tiêu</TabsTrigger>
           </TabsList>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Thời gian:</span>
-              <select
-                className="text-sm border rounded p-1"
-                value={timeFrame}
-                onChange={(e) => setTimeFrame(e.target.value as TimeFrame)}
-              >
-                {TIME_FRAME_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Loại biểu đồ:
-              </span>
-              <select
-                className="text-sm border rounded p-1"
-                value={chartType}
-                onChange={(e) => setChartType(e.target.value as ChartType)}
-              >
-                {CHART_TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <FileImportExport
             onImport={handleImportData}
             onExport={handleExportData}
