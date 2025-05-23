@@ -55,7 +55,6 @@ export function FileImportExport({
   const handleFileImport = async () => {
     if (!selectedFile) {
       setError("Vui lòng chọn file để nhập")
-      return
     }
 
     try {

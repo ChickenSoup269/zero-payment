@@ -9,6 +9,21 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart"
+import {
+  Bar,
+  BarChart,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Legend,
+  AreaChart,
+  Area,
+} from "recharts"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -629,16 +644,18 @@ function TaskCard({
 
   return (
     <Card
-      className={`overflow-hidden ${
+      className={`overflow-hidden  ${
         isOverdue ? "border-red-200 bg-red-50" : ""
       }`}
     >
-      <CardHeader className="pb-2 pt-3">
+      <CardHeader className="pb-2 pt-3 ">
         <div className="flex justify-between items-start gap-2">
           <div className="flex-1">
-            <CardTitle className="text-lg">{task.title}</CardTitle>
+            <CardTitle className="text-xl capitalize">{task.title}</CardTitle>
             <CardDescription className="text-xs flex items-center gap-2 mt-1">
-              <span>Tạo: {formatDate(task.createdAt)}</span>
+              <span>
+                Tạo ngày: <Badge> {formatDate(task.createdAt)}</Badge>
+              </span>
               {task.dueDate && (
                 <>
                   <span>•</span>
@@ -648,14 +665,14 @@ function TaskCard({
                     }`}
                   >
                     <Calendar className="mr-1 h-3 w-3" />
-                    Hạn: {formatDate(task.dueDate)}
+                    Ngày hết hạn:<Badge>{formatDate(task.dueDate)}</Badge>
                     {isOverdue && <AlertTriangle className="ml-1 h-3 w-3" />}
                   </span>
                 </>
               )}
             </CardDescription>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex  flex-col gap-2">
             <Badge className={getPriorityColor(task.priority)}>
               {getPriorityLabel(task.priority)}
             </Badge>
@@ -987,6 +1004,46 @@ export default function TasksPage() {
     }
   }
 
+  // Prepare data for both BarChart and AreaChart
+  const chartData = () => {
+    const statuses: Status[] = ["todo", "preparing", "in-progress", "completed"]
+    const priorities: Priority[] = ["normal", "tomorrow", "urgent"]
+
+    // Create data objects for each status
+    const data = statuses.map((status) => {
+      const tasksInStatus = filteredTasks.filter(
+        (task) => task.status === status
+      )
+      return {
+        status: getStatusLabel(status), // Display-friendly status label
+        normal: tasksInStatus.filter((task) => task.priority === "normal")
+          .length,
+        tomorrow: tasksInStatus.filter((task) => task.priority === "tomorrow")
+          .length,
+        urgent: tasksInStatus.filter((task) => task.priority === "urgent")
+          .length,
+      }
+    })
+
+    return data
+  }
+
+  // Chart configuration for styling
+  const chartConfig = {
+    normal: {
+      label: getPriorityLabel("normal"),
+      color: "#3b82f6", // Blue for normal
+    },
+    tomorrow: {
+      label: getPriorityLabel("tomorrow"),
+      color: "#eab308", // Yellow for tomorrow
+    },
+    urgent: {
+      label: getPriorityLabel("urgent"),
+      color: "#ef4444", // Red for urgent
+    },
+  }
+
   if (isFirstTime) {
     return (
       <div className="container mx-auto p-4 max-w-4xl">
@@ -1057,7 +1114,7 @@ export default function TasksPage() {
           />
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 items-center">
           <Select
             value={filters.priority}
             onValueChange={(value: Priority | "all") =>
@@ -1119,24 +1176,182 @@ export default function TasksPage() {
         </TabsList>
 
         <TabsContent value="list">
-          <div className="space-y-4">
-            {filteredTasks.length > 0 ? (
-              filteredTasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onUpdateStatus={handleUpdateTaskStatus}
-                  onDelete={handleDeleteTask}
-                  onUpdateSubtask={handleUpdateSubtask}
-                />
-              ))
-            ) : (
-              <Card>
-                <CardContent className="py-6 text-center text-gray-500">
-                  Không tìm thấy công việc nào
-                </CardContent>
-              </Card>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Thống kê công việc (Bar Chart)</CardTitle>
+                <CardDescription>
+                  Biểu đồ cột hiển thị số lượng công việc theo trạng thái và ưu
+                  tiên
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-[320px]">
+                  <BarChart
+                    data={chartData()}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="status"
+                      tick={{ fill: "#333" }}
+                      label={{
+                        position: "insideBottom",
+                        offset: -5,
+                        fill: "#333",
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fill: "#333" }}
+                      label={{
+                        value: "Số lượng công việc",
+                        angle: -90,
+                        position: "insideLeft",
+                        fill: "#333",
+                      }}
+                      tickCount={5}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend wrapperStyle={{ color: "#333" }} />
+                    <Bar
+                      dataKey="normal"
+                      stackId="a"
+                      fill={chartConfig.normal.color}
+                    />
+                    <Bar
+                      dataKey="tomorrow"
+                      stackId="a"
+                      fill={chartConfig.tomorrow.color}
+                    />
+                    <Bar
+                      dataKey="urgent"
+                      stackId="a"
+                      fill={chartConfig.urgent.color}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Thống kê công việc (Area Chart)</CardTitle>
+                <CardDescription>
+                  Biểu đồ khu vực hiển thị số lượng công việc theo trạng thái và
+                  ưu tiên
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig} className="h-[320px]">
+                  <AreaChart
+                    data={chartData()}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 10 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="fillNormal"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={chartConfig.normal.color}
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={chartConfig.normal.color}
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="fillTomorrow"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={chartConfig.tomorrow.color}
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={chartConfig.tomorrow.color}
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="fillUrgent"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={chartConfig.urgent.color}
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={chartConfig.urgent.color}
+                          stopOpacity={0.2}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="status"
+                      tick={{ fill: "#333" }}
+                      label={{
+                        position: "insideBottom",
+                        offset: -5,
+                        fill: "#333",
+                      }}
+                    />
+                    <YAxis
+                      tick={{ fill: "#333" }}
+                      label={{
+                        value: "Số lượng công việc",
+                        angle: -90,
+                        position: "insideLeft",
+                        fill: "#333",
+                      }}
+                      tickCount={5}
+                      allowDecimals={false}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Legend wrapperStyle={{ color: "#333" }} />
+                    <Area
+                      type="monotone"
+                      dataKey="normal"
+                      stackId="a"
+                      stroke={chartConfig.normal.color}
+                      fill="url(#fillNormal)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="tomorrow"
+                      stackId="a"
+                      stroke={chartConfig.tomorrow.color}
+                      fill="url(#fillTomorrow)"
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="urgent"
+                      stackId="a"
+                      stroke={chartConfig.urgent.color}
+                      fill="url(#fillUrgent)"
+                    />
+                  </AreaChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
           </div>
         </TabsContent>
 
