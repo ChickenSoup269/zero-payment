@@ -17,9 +17,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-background">
           <AdminSidebar />
-          <main className="flex-1 p-6 ml-16 lg:ml-64">{children}</main>
+          <main className="flex-1 lg:ml-72 transition-all duration-300">
+            <div className="p-4 pt-16 lg:pt-6">{children}</div>
+          </main>
         </div>
       </body>
     </html>
