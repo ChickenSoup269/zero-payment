@@ -10,13 +10,14 @@ import {
   Settings,
   ChevronRight,
   ChevronDown,
-  BarChart2,
   Sun,
   Palette,
   Type,
   Globe,
   Menu,
   X,
+  ChartLine,
+  ClipboardList,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -54,12 +55,12 @@ const getNavItems = (t: (key: string) => string): NavItem[] => [
   },
   {
     label: t("Tasks"),
-    icon: <BarChart2 className="h-5 w-5" />,
+    icon: <ClipboardList className="h-5 w-5" />,
     href: "/tasks",
   },
   {
     label: t("Giá vàng"),
-    icon: <BarChart2 className="h-5 w-5" />,
+    icon: <ChartLine className="h-5 w-5" />,
     href: "/api/gold-price",
   },
 ]

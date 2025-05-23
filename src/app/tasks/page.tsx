@@ -760,18 +760,47 @@ export default function TasksPage() {
   const [isFirstTime, setIsFirstTime] = useState<boolean>(true)
   const [fileName, setFileName] = useState<string>("")
 
-  // Initialize with default file
+  // Load files from localStorage on mount
   useEffect(() => {
-    const defaultFile: TaskFile = {
-      id: generateId(),
-      name: "Công việc chính",
-      createdAt: getCurrentDateFormatted(),
-      tasks: [],
+    const savedFiles = localStorage.getItem("taskFiles")
+    if (savedFiles) {
+      const parsedFiles: TaskFile[] = JSON.parse(savedFiles)
+      if (parsedFiles.length > 0) {
+        setFiles(parsedFiles)
+        setCurrentFileId(parsedFiles[0].id)
+        setIsFirstTime(false)
+      } else {
+        // Initialize with default file if no files exist
+        const defaultFile: TaskFile = {
+          id: generateId(),
+          name: "Công việc chính",
+          createdAt: getCurrentDateFormatted(),
+          tasks: [],
+        }
+        setFiles([defaultFile])
+        setCurrentFileId(defaultFile.id)
+        setIsFirstTime(false)
+      }
+    } else {
+      // Initialize with default file if no data in localStorage
+      const defaultFile: TaskFile = {
+        id: generateId(),
+        name: "Công việc chính",
+        createdAt: getCurrentDateFormatted(),
+        tasks: [],
+      }
+      setFiles([defaultFile])
+      setCurrentFileId(defaultFile.id)
+      setIsFirstTime(false)
     }
-    setFiles([defaultFile])
-    setCurrentFileId(defaultFile.id)
-    setIsFirstTime(false)
   }, [])
+
+  // Save files to localStorage whenever files change
+  useEffect(() => {
+    if (files.length > 0) {
+      localStorage.setItem("taskFiles", JSON.stringify(files))
+    }
+  }, [files])
 
   // Update tasks when current file changes
   useEffect(() => {
@@ -813,14 +842,6 @@ export default function TasksPage() {
     []
   )
 
-  const updateCurrentFile = (updatedTasks: Task[]) => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) =>
-        file.id === currentFileId ? { ...file, tasks: updatedTasks } : file
-      )
-    )
-  }
-
   const handleCreateFirstFile = () => {
     if (!fileName.trim()) return
 
@@ -834,6 +855,9 @@ export default function TasksPage() {
     setFiles([newFile])
     setCurrentFileId(newFile.id)
     setIsFirstTime(false)
+    setFileName("")
+    // Save to localStorage
+    localStorage.setItem("taskFiles", JSON.stringify([newFile]))
   }
 
   const handleCreateFile = (fileName: string) => {
@@ -844,8 +868,11 @@ export default function TasksPage() {
       tasks: [],
     }
 
-    setFiles((prev) => [...prev, newFile])
+    const updatedFiles = [...files, newFile]
+    setFiles(updatedFiles)
     setCurrentFileId(newFile.id)
+    // Save to localStorage
+    localStorage.setItem("taskFiles", JSON.stringify(updatedFiles))
   }
 
   const handleFileSelect = (fileId: string) => {
@@ -861,6 +888,17 @@ export default function TasksPage() {
     if (fileId === currentFileId && updatedFiles.length > 0) {
       setCurrentFileId(updatedFiles[0].id)
     }
+    // Save to localStorage
+    localStorage.setItem("taskFiles", JSON.stringify(updatedFiles))
+  }
+
+  const updateCurrentFile = (updatedTasks: Task[]) => {
+    const updatedFiles = files.map((file) =>
+      file.id === currentFileId ? { ...file, tasks: updatedTasks } : file
+    )
+    setFiles(updatedFiles)
+    // Save to localStorage
+    localStorage.setItem("taskFiles", JSON.stringify(updatedFiles))
   }
 
   const handleAddTask = (task: Task) => {

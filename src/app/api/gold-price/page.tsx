@@ -193,9 +193,18 @@ const GoldPriceTracker = () => {
         throw new Error("No valid data received from API")
       }
 
+      // Always update current prices with the latest API data
+      const uniqueCurrentPrices = getUniqueGoldTypes(parsedData)
+      setCurrentPrices(uniqueCurrentPrices)
+
+      // Set default selected gold type if not set
+      if (!selectedGoldType && uniqueCurrentPrices.length > 0) {
+        setSelectedGoldType(uniqueCurrentPrices[0].name)
+      }
+
       // Load historical data from localStorage
       const storedData = localStorage.getItem("goldPriceHistory")
-      let historical: GoldPrice[] = storedData ? JSON.parse(storedData) : []
+      const historical: GoldPrice[] = storedData ? JSON.parse(storedData) : []
 
       // Filter new data to only include items with changes
       const newData = parsedData.filter((newItem) => {
@@ -207,8 +216,10 @@ const GoldPriceTracker = () => {
 
       if (newData.length === 0) {
         setDebugInfo(
-          (prev) => prev + "\nNo price changes detected, skipping update"
+          (prev) =>
+            prev + "\nNo price changes detected, skipping history update"
         )
+        setLastUpdate(new Date())
         setLoading(false)
         return
       }
@@ -220,15 +231,6 @@ const GoldPriceTracker = () => {
         localStorage.setItem("goldPriceHistory", JSON.stringify(cappedData))
         return cappedData
       })
-
-      // Update current prices
-      const uniqueCurrentPrices = getUniqueGoldTypes(parsedData)
-      setCurrentPrices(uniqueCurrentPrices)
-
-      // Set default selected gold type if not set
-      if (!selectedGoldType && uniqueCurrentPrices.length > 0) {
-        setSelectedGoldType(uniqueCurrentPrices[0].name)
-      }
 
       // Prepare historical data for charts
       const chartData: ChartData[] = newData.map((item) => ({
