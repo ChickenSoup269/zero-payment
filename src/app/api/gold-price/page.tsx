@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
+
 import React, { useState, useEffect, useCallback } from "react"
 import {
   LineChart,
@@ -29,259 +31,194 @@ import {
   AlertCircle,
   CheckCircle,
 } from "lucide-react"
+import { ValueType } from "recharts/types/component/DefaultTooltipContent"
+
+type GoldPrice = {
+  row: number
+  name: string
+  karat: string
+  purity: string
+  buyPrice: number
+  sellPrice: number
+  change: number
+  date: string
+  timestamp: string
+  time: string
+}
+
+type ChartData = {
+  time: string
+  date: string
+  name: string
+  buyPrice: number
+  sellPrice: number
+  timestamp: string
+}
 
 const GoldPriceTracker = () => {
-  const [goldData, setGoldData] = useState([])
-  const [currentPrices, setCurrentPrices] = useState([])
-  const [historicalData, setHistoricalData] = useState([])
+  const [goldData, setGoldData] = useState<GoldPrice[]>([])
+  const [currentPrices, setCurrentPrices] = useState<GoldPrice[]>([])
+  const [historicalData, setHistoricalData] = useState<ChartData[]>([])
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [lastUpdate, setLastUpdate] = useState(null)
+  const [error, setError] = useState<string | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
   const [selectedGoldType, setSelectedGoldType] = useState("VÀNG MIẾNG SJC")
-  const [debugInfo, setDebugInfo] = useState("")
-  const [apiStatus, setApiStatus] = useState("idle")
+  const [debugInfo, setDebugInfo] = useState<string>("")
 
-  // Mock data for demonstration
-  const generateMockData = () => {
-    const goldTypes = [
-      { name: "VÀNG MIẾNG SJC", karat: "24K", purity: "999.9" },
-      { name: "VÀNG NHẪN TRÒN TRƠN", karat: "24K", purity: "999.0" },
-      { name: "VÀNG NHẪN 18K", karat: "18K", purity: "750.0" },
-      { name: "VÀNG NHẪN 14K", karat: "14K", purity: "585.0" },
-      { name: "VÀNG MIẾNG 1 CHỈ", karat: "24K", purity: "999.9" },
-    ]
+  const API_URL = "/api/gold-prices"
 
-    return goldTypes.map((type, index) => {
-      const basePrice = 75000000 + Math.random() * 5000000
-      const spread = 500000 + Math.random() * 200000
-
-      return {
-        row: index + 1,
-        name: type.name,
-        karat: type.karat,
-        purity: type.purity,
-        buyPrice: Math.floor(basePrice),
-        sellPrice: Math.floor(basePrice + spread),
-        change: Math.floor((Math.random() - 0.5) * 1000000),
-        date: new Date().toLocaleDateString("vi-VN"),
-        timestamp: new Date().toISOString(),
-        time: new Date().toLocaleTimeString("vi-VN"),
-      }
-    })
-  }
-
-  // Improved XML parser with better error handling
-  const parseXMLData = (xmlString) => {
+  // Parse XML data with improved error handling
+  const parseXMLData = (xmlString: string): GoldPrice[] => {
     try {
-      setDebugInfo(`Raw XML length: ${xmlString.length} characters`)
-
       if (!xmlString || xmlString.trim().length === 0) {
         throw new Error("Empty XML response")
       }
 
       const parser = new DOMParser()
       const xmlDoc = parser.parseFromString(xmlString, "text/xml")
-
-      // Check for parsing errors
       const parserError = xmlDoc.querySelector("parsererror")
       if (parserError) {
         throw new Error(`XML parsing error: ${parserError.textContent}`)
       }
 
-      // Try different possible XML structures
-      let dataElements = xmlDoc.querySelectorAll("Data")
+      const dataElements = xmlDoc.querySelectorAll("Data")
+      setDebugInfo(`Found ${dataElements.length} Data elements`)
+
       if (dataElements.length === 0) {
-        dataElements = xmlDoc.querySelectorAll("data")
-      }
-      if (dataElements.length === 0) {
-        dataElements = xmlDoc.querySelectorAll("item")
-      }
-      if (dataElements.length === 0) {
-        dataElements = xmlDoc.querySelectorAll("row")
+        throw new Error("No Data elements found in XML")
       }
 
-      setDebugInfo(
-        (prev) => prev + `\nFound ${dataElements.length} data elements`
+      const parsedData: GoldPrice[] = Array.from(dataElements).map(
+        (element) => {
+          const row = element.getAttribute("row") ?? "0"
+          return {
+            row: parseInt(row) || 0,
+            name: element.getAttribute(`n_${row}`) ?? "Unknown",
+            karat: element.getAttribute(`k_${row}`) ?? "Unknown",
+            purity: element.getAttribute(`h_${row}`) ?? "Unknown",
+            buyPrice: parseInt(element.getAttribute(`pb_${row}`) ?? "0") || 0,
+            sellPrice: parseInt(element.getAttribute(`ps_${row}`) ?? "0") || 0,
+            change: parseInt(element.getAttribute(`pt_${row}`) ?? "0") || 0,
+            date:
+              element.getAttribute(`d_${row}`) ??
+              new Date().toLocaleDateString("vi-VN"),
+            timestamp: new Date().toISOString(),
+            time: new Date().toLocaleTimeString("vi-VN"),
+          }
+        }
       )
 
-      if (dataElements.length === 0) {
-        // Log the XML structure for debugging
-        console.log("XML structure:", xmlDoc.documentElement)
-        setDebugInfo(
-          (prev) =>
-            prev + `\nXML Root: ${xmlDoc.documentElement?.tagName || "none"}`
-        )
-
-        // Try to extract any numeric data from XML text content
-        const xmlText = xmlDoc.textContent || xmlString
-        const numbers = xmlText.match(/\d{7,}/g) // Look for 7+ digit numbers (likely prices)
-
-        if (numbers && numbers.length > 0) {
-          setDebugInfo(
-            (prev) => prev + `\nFound ${numbers.length} potential price numbers`
-          )
-          // Return mock data with some real numbers if found
-          const mockData = generateMockData()
-          if (numbers.length >= 2) {
-            mockData[0].buyPrice = parseInt(numbers[0])
-            mockData[0].sellPrice = parseInt(numbers[1])
-          }
-          return mockData
-        }
-
-        throw new Error("No data elements found in XML")
-      }
-
-      const parsedData = Array.from(dataElements).map((element, index) => {
-        const row = element.getAttribute("row") || (index + 1).toString()
-
-        // Try multiple attribute naming patterns
-        const getName = () => {
-          return (
-            element.getAttribute(`n_${row}`) ||
-            element.getAttribute(`name_${row}`) ||
-            element.getAttribute("name") ||
-            element.textContent?.trim() ||
-            `Gold Type ${index + 1}`
-          )
-        }
-
-        const getPrice = (prefix) => {
-          return (
-            parseInt(element.getAttribute(`${prefix}_${row}`)) ||
-            parseInt(element.getAttribute(prefix)) ||
-            0
-          )
-        }
-
-        return {
-          row: parseInt(row),
-          name: getName(),
-          karat:
-            element.getAttribute(`k_${row}`) ||
-            element.getAttribute("karat") ||
-            "24K",
-          purity:
-            element.getAttribute(`h_${row}`) ||
-            element.getAttribute("purity") ||
-            "999.9",
-          buyPrice: getPrice("pb") || getPrice("buy"),
-          sellPrice: getPrice("ps") || getPrice("sell"),
-          change: getPrice("pt") || getPrice("change"),
-          date:
-            element.getAttribute(`d_${row}`) ||
-            element.getAttribute("date") ||
-            new Date().toLocaleDateString("vi-VN"),
-          timestamp: new Date().toISOString(),
-          time: new Date().toLocaleTimeString("vi-VN"),
-        }
-      })
-
-      // Filter out invalid entries
       const validData = parsedData.filter(
         (item) =>
-          item.name &&
-          item.name.length > 0 &&
-          (item.buyPrice > 0 || item.sellPrice > 0)
+          item.name !== "Unknown" && (item.buyPrice > 0 || item.sellPrice > 0)
       )
 
       setDebugInfo(
         (prev) => prev + `\nParsed ${validData.length} valid entries`
       )
 
-      if (validData.length === 0) {
-        setDebugInfo(
-          (prev) => prev + "\nNo valid entries found, using mock data"
-        )
-        return generateMockData()
-      }
-
       return validData
     } catch (err) {
-      setDebugInfo((prev) => prev + `\nParsing error: ${err.message}`)
+      setDebugInfo(
+        (prev) => prev + `\nError parsing XML: ${(err as Error).message}`
+      )
       console.error("Error parsing XML:", err)
-
-      // Return mock data as fallback
-      setDebugInfo((prev) => prev + "\nUsing mock data as fallback")
-      return generateMockData()
+      return []
     }
   }
 
   // Get unique gold types for current prices
-  const getUniqueGoldTypes = (data) => {
-    const latest = data.reduce((acc, item) => {
-      if (
-        item.name &&
-        (!acc[item.name] ||
-          new Date(item.timestamp) > new Date(acc[item.name].timestamp))
-      ) {
-        acc[item.name] = item
-      }
-      return acc
-    }, {})
+  const getUniqueGoldTypes = (data: GoldPrice[]): GoldPrice[] => {
+    const latest = data.reduce(
+      (acc: { [key: string]: GoldPrice }, item: GoldPrice) => {
+        if (
+          item.name &&
+          (!acc[item.name] ||
+            new Date(item.timestamp) > new Date(acc[item.name].timestamp))
+        ) {
+          acc[item.name] = item
+        }
+        return acc
+      },
+      {}
+    )
     return Object.values(latest)
   }
 
-  // Fetch gold price data with better error handling
+  // Check if new data differs from the latest historical data
+  const hasDataChanged = (
+    newItem: GoldPrice,
+    latestHistorical?: GoldPrice
+  ): boolean => {
+    if (!latestHistorical) return true
+    return (
+      newItem.buyPrice !== latestHistorical.buyPrice ||
+      newItem.sellPrice !== latestHistorical.sellPrice ||
+      newItem.change !== latestHistorical.change
+    )
+  }
+
+  // Fetch gold price data with localStorage integration
   const fetchGoldPrice = useCallback(async () => {
     setLoading(true)
     setError(null)
-    setDebugInfo("")
-    setApiStatus("fetching")
+    setDebugInfo("Fetching data...")
 
     try {
-      // First, try the actual API
-      let response
-      let xmlData
+      const response = await fetch(API_URL, {
+        method: "GET",
+        headers: {
+          Accept: "application/xml, text/xml, */*",
+          "Cache-Control": "no-cache",
+        },
+      })
 
-      try {
-        response = await fetch("/api/gold-prices", {
-          method: "GET",
-          headers: {
-            Accept: "application/xml, text/xml, */*",
-            "Cache-Control": "no-cache",
-          },
-          timeout: 10000,
-        })
+      setDebugInfo(
+        (prev) =>
+          prev +
+          `\nAPI Response Status: ${response.status} ${response.statusText}`
+      )
 
-        setApiStatus("response-received")
-        setDebugInfo(
-          `API Response Status: ${response.status} ${response.statusText}`
-        )
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-
-        xmlData = await response.text()
-        setDebugInfo(
-          (prev) => prev + `\nResponse received, length: ${xmlData.length}`
-        )
-      } catch (apiError) {
-        setApiStatus("api-failed")
-        setDebugInfo((prev) => prev + `\nAPI Error: ${apiError.message}`)
-        console.warn("API failed, using mock data:", apiError)
-
-        // Use mock data when API fails
-        xmlData = `<root>${generateMockData()
-          .map(
-            (item) =>
-              `<Data row="${item.row}" n_${item.row}="${item.name}" k_${item.row}="${item.karat}" h_${item.row}="${item.purity}" pb_${item.row}="${item.buyPrice}" ps_${item.row}="${item.sellPrice}" pt_${item.row}="${item.change}" d_${item.row}="${item.date}"/>`
-          )
-          .join("")}</root>`
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
 
+      const xmlData = await response.text()
+      setDebugInfo(
+        (prev) => prev + `\nResponse received, length: ${xmlData.length}`
+      )
       const parsedData = parseXMLData(xmlData)
-      setApiStatus("parsed")
 
       if (parsedData.length === 0) {
-        throw new Error("No valid data after parsing")
+        throw new Error("No valid data received from API")
       }
 
-      // Update all data
+      // Load historical data from localStorage
+      const storedData = localStorage.getItem("goldPriceHistory")
+      let historical: GoldPrice[] = storedData ? JSON.parse(storedData) : []
+
+      // Filter new data to only include items with changes
+      const newData = parsedData.filter((newItem) => {
+        const latestHistorical = historical.find(
+          (item) => item.name === newItem.name
+        )
+        return hasDataChanged(newItem, latestHistorical)
+      })
+
+      if (newData.length === 0) {
+        setDebugInfo(
+          (prev) => prev + "\nNo price changes detected, skipping update"
+        )
+        setLoading(false)
+        return
+      }
+
+      // Update goldData and save to localStorage
       setGoldData((prev) => {
-        const newData = [...prev, ...parsedData]
-        return newData.slice(-1000) // Keep only last 1000 records
+        const updatedData = [...prev, ...newData]
+        const cappedData = updatedData.slice(-1000) // Keep last 1000 records
+        localStorage.setItem("goldPriceHistory", JSON.stringify(cappedData))
+        return cappedData
       })
 
       // Update current prices
@@ -294,7 +231,7 @@ const GoldPriceTracker = () => {
       }
 
       // Prepare historical data for charts
-      const chartData = parsedData.map((item) => ({
+      const chartData: ChartData[] = newData.map((item) => ({
         time: item.time,
         date: item.date,
         name: item.name,
@@ -309,28 +246,43 @@ const GoldPriceTracker = () => {
       })
 
       setLastUpdate(new Date())
-      setApiStatus("success")
       setDebugInfo(
-        (prev) => prev + `\nSuccess! Updated ${parsedData.length} records`
+        (prev) => prev + `\nSuccess! Updated ${newData.length} records`
       )
     } catch (err) {
-      setApiStatus("error")
-      setError(`Lỗi khi lấy dữ liệu giá vàng: ${err.message}`)
-      setDebugInfo((prev) => prev + `\nFinal error: ${err.message}`)
+      setError(`Lỗi khi lấy dữ liệu giá vàng: ${(err as Error).message}`)
+      setDebugInfo((prev) => prev + `\nError: ${(err as Error).message}`)
       console.error("Error fetching gold price:", err)
     } finally {
       setLoading(false)
     }
   }, [selectedGoldType])
 
-  // Auto-refresh every 60 seconds
+  // Initialize from localStorage and set up auto-refresh
   useEffect(() => {
+    // Load historical data from localStorage
+    const storedData = localStorage.getItem("goldPriceHistory")
+    if (storedData) {
+      const parsedStoredData: GoldPrice[] = JSON.parse(storedData)
+      setGoldData(parsedStoredData.slice(-1000))
+      setHistoricalData(
+        parsedStoredData.slice(-500).map((item) => ({
+          time: item.time,
+          date: item.date,
+          name: item.name,
+          buyPrice: item.buyPrice,
+          sellPrice: item.sellPrice,
+          timestamp: item.timestamp,
+        }))
+      )
+    }
+
     fetchGoldPrice()
     const interval = setInterval(fetchGoldPrice, 60000)
     return () => clearInterval(interval)
   }, [fetchGoldPrice])
 
-  // Export functions
+  // Export data as JSON
   const exportJSON = () => {
     const exportData = {
       currentPrices,
@@ -354,6 +306,7 @@ const GoldPriceTracker = () => {
     URL.revokeObjectURL(url)
   }
 
+  // Export data as TXT
   const exportTXT = () => {
     const headers =
       "Thời gian\tNgày\tTên vàng\tGiá mua\tGiá bán\tKarat\tĐộ tinh khiết\n"
@@ -385,12 +338,12 @@ const GoldPriceTracker = () => {
   }
 
   // Format price for display
-  const formatPrice = (price) => {
+  const formatPrice = (price: number | ValueType) => {
     if (!price || price === 0) return "Không có giá"
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(price)
+    }).format(Number(price))
   }
 
   // Get chart data for selected gold type
@@ -423,16 +376,10 @@ const GoldPriceTracker = () => {
   const priceStats = getPriceStats()
 
   const getStatusIcon = () => {
-    switch (apiStatus) {
-      case "success":
-        return <CheckCircle className="w-5 h-5 text-green-500" />
-      case "error":
-        return <AlertCircle className="w-5 h-5 text-red-500" />
-      case "fetching":
-        return <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
-      default:
-        return <Clock className="w-5 h-5 text-gray-500" />
-    }
+    if (loading)
+      return <RefreshCw className="w-5 h-5 animate-spin text-blue-500" />
+    if (error) return <AlertCircle className="w-5 h-5 text-red-500" />
+    return <CheckCircle className="w-5 h-5 text-green-500" />
   }
 
   return (
@@ -475,17 +422,6 @@ const GoldPriceTracker = () => {
                   </Badge>
                   <Badge variant="outline">
                     {currentPrices.length} loại vàng
-                  </Badge>
-                  <Badge
-                    variant={
-                      apiStatus === "success"
-                        ? "default"
-                        : apiStatus === "error"
-                        ? "destructive"
-                        : "secondary"
-                    }
-                  >
-                    {apiStatus}
                   </Badge>
                 </div>
               </div>
@@ -561,7 +497,6 @@ const GoldPriceTracker = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="border-red-200 shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg text-red-700">
@@ -574,7 +509,6 @@ const GoldPriceTracker = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card className="border-blue-200 shadow-lg">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg text-blue-700">

@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import {
   Card,
   CardContent,
@@ -916,11 +916,11 @@ export default function TasksPage() {
   const handleExportCSV = () => {
     try {
       const csvContent = taskToCSV(tasks)
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8" })
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.setAttribute("href", url)
-      link.setAttribute("download", `${currentFileName() || "tasks"}.csv`)
+      link.setAttribute("download", `${currentFileId}_tasks.csv`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -934,12 +934,12 @@ export default function TasksPage() {
     try {
       const jsonContent = exportToJSON(tasks)
       const blob = new Blob([jsonContent], {
-        type: "application/json;charset=utf-8",
+        type: "application/json;charset=utf-8;",
       })
       const url = URL.createObjectURL(blob)
       const link = document.createElement("a")
       link.setAttribute("href", url)
-      link.setAttribute("download", `${currentFileName() || "tasks"}.json`)
+      link.setAttribute("download", `${currentFileId}_tasks.json`)
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -949,177 +949,186 @@ export default function TasksPage() {
     }
   }
 
-  const currentFileName = () => {
-    return files.find((f) => f.id === currentFileId)?.name || "tasks"
-  }
-
-  return (
-    <div className="container mx-auto p-4 max-w-7xl">
-      {isFirstTime ? (
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>
-                Chào mừng đến với ứng dụng quản lý công việc
-              </CardTitle>
-              <CardDescription>
-                Tạo file công việc đầu tiên của bạn
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-2">
-                <Label htmlFor="first-file-name">Tên file</Label>
+  if (isFirstTime) {
+    return (
+      <div className="container mx-auto p-4 max-w-4xl">
+        <Card>
+          <CardHeader>
+            <CardTitle>Chào mừng bạn đến với Quản lý công việc</CardTitle>
+            <CardDescription>
+              Vui lòng tạo file công việc đầu tiên của bạn
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <Label htmlFor="first-file-name">Tên file đầu tiên</Label>
+              <div className="flex gap-2">
                 <Input
                   id="first-file-name"
                   placeholder="Nhập tên file"
                   value={fileName}
                   onChange={(e) => setFileName(e.target.value)}
                 />
+                <Button
+                  onClick={handleCreateFirstFile}
+                  disabled={!fileName.trim()}
+                >
+                  Tạo
+                </Button>
               </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full"
-                onClick={handleCreateFirstFile}
-                disabled={!fileName.trim()}
-              >
-                Tạo file đầu tiên
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {/* Header and Controls */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <FileSelect
-                files={files}
-                currentFile={currentFileId}
-                onFileSelect={handleFileSelect}
-                onDeleteFile={handleDeleteFile}
-              />
-              <NewFileDialog
-                isOpen={isNewFileDialogOpen}
-                onOpenChange={setIsNewFileDialogOpen}
-                onCreateFile={handleCreateFile}
-              />
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={handleExportCSV}>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container mx-auto p-4 max-w-7xl">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Quản lý công việc</h1>
+        <div className="flex gap-2">
+          <NewFileDialog
+            isOpen={isNewFileDialogOpen}
+            onOpenChange={setIsNewFileDialogOpen}
+            onCreateFile={handleCreateFile}
+          />
+          <FileSelect
+            files={files}
+            currentFile={currentFileId}
+            onFileSelect={handleFileSelect}
+            onDeleteFile={handleDeleteFile}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex gap-4 items-center">
+          <div className="relative flex-1">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-500" />
+            <Input
+              placeholder="Tìm kiếm công việc..."
+              className="pl-8"
+              onChange={(e) => debouncedSetSearchTerm(e.target.value)}
+            />
+          </div>
+          <NewTaskDialog
+            isOpen={isNewTaskDialogOpen}
+            onOpenChange={setIsNewTaskDialogOpen}
+            onAddTask={handleAddTask}
+          />
+        </div>
+
+        <div className="flex gap-4">
+          <Select
+            value={filters.priority}
+            onValueChange={(value: Priority | "all") =>
+              setFilters((prev) => ({ ...prev, priority: value }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Lọc theo ưu tiên" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả ưu tiên</SelectItem>
+              <SelectItem value="normal">Cần làm</SelectItem>
+              <SelectItem value="tomorrow">Cần làm vào ngày mai</SelectItem>
+              <SelectItem value="urgent">Cần gấp</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={filters.status}
+            onValueChange={(value: Status | "all") =>
+              setFilters((prev) => ({ ...prev, status: value }))
+            }
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="Lọc theo trạng thái" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tất cả trạng thái</SelectItem>
+              <SelectItem value="todo">Cần làm</SelectItem>
+              <SelectItem value="preparing">Chuẩn bị</SelectItem>
+              <SelectItem value="in-progress">Đang làm</SelectItem>
+              <SelectItem value="completed">Hoàn thành</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
                 <Download className="mr-2 h-4 w-4" />
+                Xuất dữ liệu
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={handleExportCSV}>
                 Xuất CSV
-              </Button>
-              <Button variant="outline" onClick={handleExportJSON}>
-                <Download className="mr-2 h-4 w-4" />
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportJSON}>
                 Xuất JSON
-              </Button>
-              <NewTaskDialog
-                isOpen={isNewTaskDialogOpen}
-                onOpenChange={setIsNewTaskDialogOpen}
-                onAddTask={handleAddTask}
-              />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Tìm kiếm công việc..."
-                className="pl-10"
-                onChange={(e) => debouncedSetSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-4">
-              <Select
-                value={filters.priority}
-                onValueChange={(value: Priority | "all") =>
-                  setFilters((prev) => ({ ...prev, priority: value }))
-                }
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Lọc theo ưu tiên" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả ưu tiên</SelectItem>
-                  <SelectItem value="normal">Cần làm</SelectItem>
-                  <SelectItem value="tomorrow">Cần làm vào ngày mai</SelectItem>
-                  <SelectItem value="urgent">Cần gấp</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select
-                value={filters.status}
-                onValueChange={(value: Status | "all") =>
-                  setFilters((prev) => ({ ...prev, status: value }))
-                }
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Lọc theo trạng thái" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                  <SelectItem value="todo">Cần làm</SelectItem>
-                  <SelectItem value="preparing">Chuẩn bị</SelectItem>
-                  <SelectItem value="in-progress">Đang làm</SelectItem>
-                  <SelectItem value="completed">Hoàn thành</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* Tasks Display */}
-          <Tabs defaultValue="grid" className="w-full">
-            <TabsList>
-              <TabsTrigger value="grid">Lưới</TabsTrigger>
-              <TabsTrigger value="list">Danh sách</TabsTrigger>
-            </TabsList>
-            <TabsContent value="grid">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredTasks.length > 0 ? (
-                  filteredTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onUpdateStatus={handleUpdateTaskStatus}
-                      onDelete={handleDeleteTask}
-                      onUpdateSubtask={handleUpdateSubtask}
-                    />
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-12">
-                    <p className="text-gray-500">
-                      Không có công việc nào phù hợp với bộ lọc
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            <TabsContent value="list">
-              <div className="space-y-4">
-                {filteredTasks.length > 0 ? (
-                  filteredTasks.map((task) => (
-                    <TaskCard
-                      key={task.id}
-                      task={task}
-                      onUpdateStatus={handleUpdateTaskStatus}
-                      onDelete={handleDeleteTask}
-                      onUpdateSubtask={handleUpdateSubtask}
-                    />
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-gray-500">
-                      Không có công việc nào phù hợp với bộ lọc
-                    </p>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      )}
+      </div>
+
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList className="grid w-[200px] grid-cols-2 mb-4">
+          <TabsTrigger value="list">Danh sách</TabsTrigger>
+          <TabsTrigger value="board">Bảng</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list">
+          <div className="space-y-4">
+            {filteredTasks.length > 0 ? (
+              filteredTasks.map((task) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onUpdateStatus={handleUpdateTaskStatus}
+                  onDelete={handleDeleteTask}
+                  onUpdateSubtask={handleUpdateSubtask}
+                />
+              ))
+            ) : (
+              <Card>
+                <CardContent className="py-6 text-center text-gray-500">
+                  Không tìm thấy công việc nào
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="board">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {(
+              ["todo", "preparing", "in-progress", "completed"] as Status[]
+            ).map((status) => (
+              <div key={status} className="space-y-4">
+                <h3 className="font-semibold text-lg capitalize">
+                  {getStatusLabel(status)}
+                </h3>
+                <div className="space-y-4">
+                  {filteredTasks
+                    .filter((task) => task.status === status)
+                    .map((task) => (
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onUpdateStatus={handleUpdateTaskStatus}
+                        onDelete={handleDeleteTask}
+                        onUpdateSubtask={handleUpdateSubtask}
+                      />
+                    ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
