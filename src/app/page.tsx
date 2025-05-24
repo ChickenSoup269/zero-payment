@@ -10,12 +10,13 @@ import { ExpenseFormDialog } from "@/components/ui-payment/expense-form-dialog"
 import { ExpenseTable } from "@/components/ui-payment/expense-table"
 import { ExpenseChart } from "@/components/ui-payment/expense-chart"
 import { ExpenseSummary } from "@/components/ui-payment/expense-summary"
+import { ExpenseBarChart } from "@/components/ui-payment/expense-bar-chart"
 import { FileImportExport } from "@/components/ui-payment/file-import-export"
 import { UserData, Expense, TimeFrame, ChartType } from "@/lib/types"
 import {
   DEFAULT_USER_DATA,
-  TIME_FRAME_OPTIONS,
-  CHART_TYPE_OPTIONS,
+  //TIME_FRAME_OPTIONS,
+  // CHART_TYPE_OPTIONS,
 } from "@/lib/constants"
 import {
   loadUserData,
@@ -47,6 +48,7 @@ export default function ExpenseDashboard() {
   const [currentFile, setCurrentFile] = useState<string>("default")
   const [showNewFileModal, setShowNewFileModal] = useState(false)
   const [newFileName, setNewFileName] = useState("")
+  const [percentageChange, setPercentageChange] = useState<number>(0)
   const router = useRouter()
 
   useEffect(() => {
@@ -152,6 +154,14 @@ export default function ExpenseDashboard() {
     }
   }
 
+  const handleTimeFrameChange = (newTimeFrame: TimeFrame) => {
+    setTimeFrame(newTimeFrame)
+  }
+
+  const handlePercentageChange = (percentage: number) => {
+    setPercentageChange(percentage)
+  }
+
   const getChartIcon = () => {
     switch (chartType) {
       case "bar":
@@ -211,15 +221,30 @@ export default function ExpenseDashboard() {
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-1 md:grid-cols-2 sm:grid-cols-3  gap-6 mb-6 ">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle>Tổng quan chi tiêu</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ExpenseSummary expenses={filteredExpenses} timeFrame={timeFrame} />
-          </CardContent>
-        </Card>
+      {/* Layout mới: Summary bên trái, Bar Chart bên phải */}
+      <div className="grid lg:grid-cols-3 gap-6 mb-6">
+        <div className="lg:col-span-1">
+          <ExpenseBarChart
+            expenses={filteredExpenses}
+            timeFrame={timeFrame}
+            percentageChange={percentageChange}
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle>Tổng quan chi tiêu</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ExpenseSummary
+                expenses={filteredExpenses}
+                defaultTimeFrame={timeFrame}
+                onTimeFrameChange={handleTimeFrameChange}
+                onPercentageChange={handlePercentageChange}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       <Tabs defaultValue="chart" className="mb-6">

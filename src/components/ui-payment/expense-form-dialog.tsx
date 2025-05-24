@@ -24,7 +24,7 @@ export function ExpenseFormDialog({ onAddExpense }: ExpenseFormDialogProps) {
       <Button
         onClick={() => setIsOpen(true)}
         className="flex items-center gap-2"
-        size="lg"
+        size="sm"
       >
         <Plus className="w-5 h-5" />
         Thêm chi tiêu mới

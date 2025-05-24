@@ -26,6 +26,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 interface ExpenseSummaryProps {
   expenses: Expense[]
   defaultTimeFrame?: TimeFrame
+  onTimeFrameChange?: (timeFrame: TimeFrame) => void
+  onPercentageChange?: (percentage: number) => void
 }
 
 // Map của danh mục chính đến icon tương ứng
@@ -42,6 +44,8 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 export function ExpenseSummary({
   expenses,
   defaultTimeFrame = "month",
+  onTimeFrameChange,
+  onPercentageChange,
 }: ExpenseSummaryProps) {
   const [timeFrame, setTimeFrame] = React.useState<TimeFrame>(defaultTimeFrame)
   const [previousPeriodExpenses, setPreviousPreviodExpenses] = React.useState<
@@ -143,15 +147,32 @@ export function ExpenseSummary({
     all: "tất cả thời gian",
   }[timeFrame]
 
+  // Notify parent component about changes
+  React.useEffect(() => {
+    if (onTimeFrameChange) {
+      onTimeFrameChange(timeFrame)
+    }
+  }, [timeFrame, onTimeFrameChange])
+
+  React.useEffect(() => {
+    if (onPercentageChange) {
+      onPercentageChange(percentageChange)
+    }
+  }, [percentageChange, onPercentageChange])
+
+  const handleTimeFrameChange = (value: string) => {
+    setTimeFrame(value as TimeFrame)
+  }
+
   return (
-    <div className="space-y-6 ">
+    <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <h2 className="text-2xl font-bold mb-2 sm:mb-0">Tổng quan chi tiêu</h2>
         <div className="flex items-center">
           <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
           <Tabs
             value={timeFrame}
-            onValueChange={(value) => setTimeFrame(value as TimeFrame)}
+            onValueChange={handleTimeFrameChange}
             className="w-full"
           >
             <TabsList>
