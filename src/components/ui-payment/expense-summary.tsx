@@ -8,7 +8,7 @@ import {
   formatCurrency,
   groupExpensesByCategory,
 } from "@/lib/utils"
-import { CATEGORY_COLORS } from "@/lib/constants"
+import { CATEGORY_COLORS, CATEGORY_COLORS_2 } from "@/lib/constants"
 import {
   ArrowUpIcon,
   ArrowDownIcon,
@@ -20,8 +20,10 @@ import {
   CoinsIcon,
   ShoppingCartIcon,
   CalendarIcon,
+  PaletteIcon,
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Button } from "@/components/ui/button"
 
 interface ExpenseSummaryProps {
   expenses: Expense[]
@@ -32,13 +34,13 @@ interface ExpenseSummaryProps {
 
 // Map của danh mục chính đến icon tương ứng
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  "Chi tiêu thiết yếu": <ShoppingCartIcon className="w-5 h-5 text-white" />,
-  "Mua sắm giải trí": <ShoppingBagIcon className="w-5 h-5 text-white" />,
-  "Giáo dục và y tế": <BookOpenIcon className="w-5 h-5 text-white" />,
-  "Tiết kiệm": <PiggyBankIcon className="w-5 h-5 text-white" />,
-  "Đầu tư": <TrendingUpIcon className="w-5 h-5 text-white" />,
-  "Chi khác": <GiftIcon className="w-5 h-5 text-white" />,
-  "Tiền vay": <CoinsIcon className="w-5 h-5 text-white" />,
+  "Chi tiêu thiết yếu": <ShoppingCartIcon className="w-5 h-5" />,
+  "Mua sắm giải trí": <ShoppingBagIcon className="w-5 h-5" />,
+  "Giáo dục và y tế": <BookOpenIcon className="w-5 h-5" />,
+  "Tiết kiệm": <PiggyBankIcon className="w-5 h-5" />,
+  "Đầu tư": <TrendingUpIcon className="w-5 h-5" />,
+  "Chi khác": <GiftIcon className="w-5 h-5" />,
+  "Tiền vay": <CoinsIcon className="w-5 h-5" />,
 }
 
 export function ExpenseSummary({
@@ -51,6 +53,7 @@ export function ExpenseSummary({
   const [previousPeriodExpenses, setPreviousPreviodExpenses] = React.useState<
     Expense[]
   >([])
+  const [isFullColorMode, setIsFullColorMode] = React.useState(false)
 
   React.useEffect(() => {
     // Calculate previous period expenses based on current timeFrame
@@ -164,24 +167,37 @@ export function ExpenseSummary({
     setTimeFrame(value as TimeFrame)
   }
 
+  // Helper function to get contrasting text color
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
         <h2 className="text-2xl font-bold mb-2 sm:mb-0">Tổng quan chi tiêu</h2>
-        <div className="flex items-center">
-          <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-          <Tabs
-            value={timeFrame}
-            onValueChange={handleTimeFrameChange}
-            className="w-full"
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsFullColorMode(!isFullColorMode)}
+            className="flex items-center gap-2"
           >
-            <TabsList>
-              <TabsTrigger value="week">Tuần này</TabsTrigger>
-              <TabsTrigger value="month">Tháng này</TabsTrigger>
-              <TabsTrigger value="year">Năm này</TabsTrigger>
-              <TabsTrigger value="all">Tất cả</TabsTrigger>
-            </TabsList>
-          </Tabs>
+            <PaletteIcon className="w-4 h-4" />
+            {isFullColorMode ? "Chế độ thường" : "Chế độ màu sắc"}
+          </Button>
+          <div className="flex items-center">
+            <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
+            <Tabs
+              value={timeFrame}
+              onValueChange={handleTimeFrameChange}
+              className="w-full"
+            >
+              <TabsList>
+                <TabsTrigger value="week">Tuần này</TabsTrigger>
+                <TabsTrigger value="month">Tháng này</TabsTrigger>
+                <TabsTrigger value="year">Năm này</TabsTrigger>
+                <TabsTrigger value="all">Tất cả</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </div>
 
@@ -224,38 +240,90 @@ export function ExpenseSummary({
             const categoryColor =
               CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] ||
               "#888"
+            const categoryColor2 =
+              CATEGORY_COLORS_2[category as keyof typeof CATEGORY_COLORS_2] ||
+              "#888"
+
             return (
               <Card
                 key={category}
-                className="overflow-hidden border-l-4"
-                style={{ borderLeftColor: categoryColor }}
+                className={`overflow-hidden transition-all duration-300 ${
+                  isFullColorMode ? "" : "border-l-4"
+                }`}
+                style={{
+                  ...(isFullColorMode
+                    ? {
+                        backgroundColor: categoryColor,
+                        boxShadow: `0 4px 20px ${categoryColor}66`,
+                      }
+                    : { borderLeftColor: categoryColor }),
+                }}
               >
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <div
-                        className="w-8 h-8 rounded-full mr-2 flex items-center justify-center"
-                        style={{ backgroundColor: categoryColor }}
+                        className={`w-8 h-8 rounded-full mr-2 flex items-center justify-center ${
+                          isFullColorMode ? "bg-white bg-opacity-20" : ""
+                        }`}
+                        style={
+                          isFullColorMode
+                            ? undefined
+                            : { backgroundColor: categoryColor }
+                        }
                       >
-                        {CATEGORY_ICONS[category] || (
-                          <ShoppingBagIcon className="w-5 h-5 text-white" />
-                        )}
+                        <div
+                          style={
+                            isFullColorMode
+                              ? { color: categoryColor }
+                              : { color: "white" }
+                          }
+                        >
+                          {CATEGORY_ICONS[category] || (
+                            <ShoppingBagIcon className="w-5 h-5" />
+                          )}
+                        </div>
                       </div>
-                      <div className="text-sm font-medium">{category}</div>
+                      <div
+                        className="text-sm font-medium"
+                        style={isFullColorMode ? { color: "white" } : undefined}
+                      >
+                        {category}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-2xl font-bold mt-2">
+                  <div
+                    className="text-2xl font-bold mt-2"
+                    style={isFullColorMode ? { color: "white" } : undefined}
+                  >
                     {formatCurrency(amount)}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
+                  <div
+                    className={`text-sm mt-1 ${
+                      isFullColorMode ? "" : "text-muted-foreground"
+                    }`}
+                    style={
+                      isFullColorMode
+                        ? { color: "white", opacity: 0.8 }
+                        : undefined
+                    }
+                  >
                     {((amount / totalExpenses) * 100).toFixed(1)}% tổng chi tiêu
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div
+                    className={`w-full shadow-2xl rounded-full h-1.5 mt-2 ${
+                      isFullColorMode ? "bg-white" : "bg-gray-200"
+                    }`}
+                  >
+                    {/* process bar */}
                     <div
                       className="h-1.5 rounded-full"
                       style={{
                         width: `${(amount / totalExpenses) * 100}%`,
-                        backgroundColor: categoryColor,
+                        backgroundColor: isFullColorMode
+                          ? categoryColor2
+                          : categoryColor,
+                        opacity: isFullColorMode ? 0.8 : 1,
                       }}
                     ></div>
                   </div>

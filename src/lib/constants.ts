@@ -130,6 +130,16 @@ export const CATEGORY_COLORS = {
   "Tiền vay": "#EF4444",
 }
 
+export const CATEGORY_COLORS_2 = {
+  "Chi tiêu thiết yếu": "#FFB3B3", // nhạt hơn đỏ
+  "Mua sắm giải trí": "#A0EDE6", // nhạt hơn xanh ngọc
+  "Giáo dục và y tế": "#FFE699", // nhạt hơn vàng
+  "Tiết kiệm": "#9FF5C1", // nhạt hơn xanh lá
+  "Đầu tư": "#A8D3E5", // nhạt hơn xanh dương
+  "Chi khác": "#C6B8F9", // nhạt hơn tím
+  "Tiền vay": "#FCA5A5", // đỏ cam nhạt
+}
+
 export const DEFAULT_USER_DATA: UserData = {
   name: "",
   expenses: [],

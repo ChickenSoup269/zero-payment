@@ -154,7 +154,9 @@ const GoldPriceTracker = () => {
     return (
       newItem.buyPrice !== latestHistorical.buyPrice ||
       newItem.sellPrice !== latestHistorical.sellPrice ||
-      newItem.change !== latestHistorical.change
+      newItem.change !== latestHistorical.change ||
+      newItem.karat !== latestHistorical.karat ||
+      newItem.purity !== latestHistorical.purity
     )
   }
 
@@ -208,9 +210,12 @@ const GoldPriceTracker = () => {
 
       // Filter new data to only include items with changes
       const newData = parsedData.filter((newItem) => {
-        const latestHistorical = historical.find(
-          (item) => item.name === newItem.name
-        )
+        const latestHistorical = historical
+          .filter((item) => item.name === newItem.name)
+          .sort(
+            (a, b) =>
+              new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          )[0]
         return hasDataChanged(newItem, latestHistorical)
       })
 
@@ -224,11 +229,15 @@ const GoldPriceTracker = () => {
         return
       }
 
-      // Update goldData and save to localStorage
+      // Update goldData and save to localStorage only if there are changes
       setGoldData((prev) => {
         const updatedData = [...prev, ...newData]
         const cappedData = updatedData.slice(-1000) // Keep last 1000 records
         localStorage.setItem("goldPriceHistory", JSON.stringify(cappedData))
+        setDebugInfo(
+          (prev) =>
+            prev + `\nSaved ${newData.length} new records to localStorage`
+        )
         return cappedData
       })
 
@@ -259,6 +268,31 @@ const GoldPriceTracker = () => {
       setLoading(false)
     }
   }, [selectedGoldType])
+
+  // Initialize from localStorage and set up auto-refresh
+  useEffect(() => {
+    // Load historical data from localStorage
+    const storedData = localStorage.getItem("goldPriceHistory")
+    if (storedData) {
+      const parsedStoredData: GoldPrice[] = JSON.parse(storedData)
+      setGoldData(parsedStoredData.slice(-1000))
+      setHistoricalData(
+        parsedStoredData.slice(-500).map((item) => ({
+          time: item.time,
+          date: item.date,
+          name: item.name,
+          buyPrice: item.buyPrice,
+          sellPrice: item.sellPrice,
+          timestamp: item.timestamp,
+        }))
+      )
+    }
+
+    // Fetch data immediately and set up interval
+    fetchGoldPrice()
+    const interval = setInterval(fetchGoldPrice, 60000)
+    return () => clearInterval(interval)
+  }, [fetchGoldPrice])
 
   // Initialize from localStorage and set up auto-refresh
   useEffect(() => {
