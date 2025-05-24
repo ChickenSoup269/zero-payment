@@ -1356,14 +1356,16 @@ export default function TasksPage() {
         </TabsContent>
 
         <TabsContent value="board">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {(
               ["todo", "preparing", "in-progress", "completed"] as Status[]
             ).map((status) => (
               <div key={status} className="space-y-4">
-                <h3 className="font-semibold text-lg capitalize">
-                  {getStatusLabel(status)}
-                </h3>
+                <Badge>
+                  <h3 className="font-semibold text-lg capitalize">
+                    {getStatusLabel(status)}
+                  </h3>
+                </Badge>
                 <div className="space-y-4">
                   {filteredTasks
                     .filter((task) => task.status === status)
