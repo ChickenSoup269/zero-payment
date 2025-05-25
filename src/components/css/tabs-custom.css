@@ -2,7 +2,7 @@
 
 /* Custom TabsList container */
 .custom-tabs-list {
-  background-color: #f1f5f9; /* bg-gray-100 */
+  background-color: var(--background-color); /* Use theme background color */
   padding: 0.25rem; /* p-1 */
   border-radius: 0.5rem; /* rounded-lg */
   display: flex;
@@ -20,18 +20,23 @@
 /* Normal state */
 .custom-tab-trigger {
   background-color: transparent;
-  color: #64748b; /* text-gray-500 */
+  color: var(--text-color); /* Use theme text color */
 }
 
 /* Hover state */
 .custom-tab-trigger:hover {
-  background-color: #e2e8f0; /* hover:bg-gray-200 */
+  background-color: var(
+    --background-color
+  ); /* Slightly darker/lighter background for hover */
+  opacity: 0.8; /* Simulate hover effect similar to bg-gray-200 */
 }
 
 /* Active state */
 .custom-tab-trigger[data-state="active"] {
-  background-color: white; /* bg-white */
-  color: #2563eb; /* text-blue-600 */
+  background-color: var(
+    --background-color
+  ); /* Use theme background for active tab */
+  color: var(--primary-color); /* Use primary color for active text */
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* shadow-sm */
 }
 
@@ -39,8 +44,8 @@
 .custom-tab-trigger-gradient[data-state="active"] {
   background-image: linear-gradient(
     to right,
-    #3b82f6,
-    #8b5cf6
-  ); /* from-blue-500 to-purple-500 */
-  color: white;
+    var(--primary-color),
+    var(--secondary-color)
+  ); /* Use primary and secondary colors for gradient */
+  color: var(--text-color); /* Ensure readable text color */
 }

@@ -1,9 +1,6 @@
 import "./globals.css"
 import "./styles/fonts.css"
-import { Inter } from "next/font/google"
 import AdminSidebar from "@/components/ui-sidebar/sidebar"
-
-const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
   title: "Expense Management",
@@ -17,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body
+        className="min-h-screen bg-background text-text"
+        style={{ fontFamily: "var(--font-family)" }}
+      >
         <div className="flex min-h-screen bg-background">
           <AdminSidebar />
           <main className="flex-1 lg:ml-72 transition-all duration-300">
