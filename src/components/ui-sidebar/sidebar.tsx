@@ -62,7 +62,7 @@ const getNavItems = (): NavItem[] => [
   },
 ]
 
-// NavItem component (unchanged)
+// NavItem component
 const NavItem: React.FC<{
   item: NavItem
   currentPath: string
@@ -102,21 +102,20 @@ const NavItem: React.FC<{
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer group",
           isActive || hasActiveSubItem
-            ? "bg-primary text-primary-foreground font-medium shadow-sm"
-            : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+            ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-text font-medium shadow-sm"
+            : "text-text hover:bg-secondary/20 hover:text-text",
           isCollapsed
             ? "justify-center"
-            : level > 0 && "pl-8 ml-4 border-l-2 border-muted",
+            : level > 0 && "pl-8 ml-4 border-l-2 border-border",
           level > 0 && (isActive || hasActiveSubItem) && "border-l-primary"
         )}
+        style={{ fontFamily: "var(--font-family)" }}
         title={isCollapsed ? item.label : undefined}
       >
         <div
           className={cn(
             "flex items-center justify-center rounded-md transition-colors",
-            isActive || hasActiveSubItem
-              ? "text-primary-foreground"
-              : "group-hover:text-accent-foreground"
+            isActive || hasActiveSubItem ? "text-text" : "group-hover:text-text"
           )}
         >
           {item.icon}
@@ -178,60 +177,55 @@ const AdminSidebar: React.FC = () => {
   // Save settings to localStorage and apply theme/font
   useEffect(() => {
     localStorage.setItem("adminSettings", JSON.stringify(settings))
-    document.documentElement.classList.remove(
+    const root = document.documentElement
+    root.classList.remove(
       "light",
       "dark",
       "pixel-tree-light",
       "pixel-tree-dark"
     )
-    document.documentElement.classList.add(settings.theme)
-    document.documentElement.style.setProperty(
+    root.classList.add(settings.theme)
+
+    const isPixelTree = settings.theme.startsWith("pixel-tree")
+    const pixelTreeTheme = isPixelTree
+      ? THEME_PIXEL_TREE[
+          settings.theme === "pixel-tree-light" ? "light" : "dark"
+        ]
+      : null
+
+    root.style.setProperty(
       "--primary-color",
-      settings.theme.startsWith("pixel-tree")
-        ? THEME_PIXEL_TREE[
-            settings.theme === "pixel-tree-light" ? "light" : "dark"
-          ].primary
-        : getColorValue(settings.color)
+      isPixelTree ? pixelTreeTheme.primary : getColorValue(settings.color)
     )
-    document.documentElement.style.setProperty(
+    root.style.setProperty(
       "--secondary-color",
-      settings.theme.startsWith("pixel-tree")
-        ? THEME_PIXEL_TREE[
-            settings.theme === "pixel-tree-light" ? "light" : "dark"
-          ].secondary
-        : getColorValue(settings.color)
+      isPixelTree ? pixelTreeTheme.secondary : getColorValue(settings.color)
     )
-    document.documentElement.style.setProperty(
+    root.style.setProperty(
       "--background-color",
-      settings.theme.startsWith("pixel-tree")
-        ? THEME_PIXEL_TREE[
-            settings.theme === "pixel-tree-light" ? "light" : "dark"
-          ].background
+      isPixelTree
+        ? pixelTreeTheme.background
         : settings.theme === "light"
         ? "#FFFFFF"
         : "#1F2937"
     )
-    document.documentElement.style.setProperty(
+    root.style.setProperty(
       "--text-color",
-      settings.theme.startsWith("pixel-tree")
-        ? THEME_PIXEL_TREE[
-            settings.theme === "pixel-tree-light" ? "light" : "dark"
-          ].text
+      isPixelTree
+        ? pixelTreeTheme.text
         : settings.theme === "light"
-        ? "#000000"
-        : "#FFFFFF"
+        ? "#1F2937"
+        : "#F9FAFB"
     )
-    document.documentElement.style.setProperty(
+    root.style.setProperty(
       "--border-color",
-      settings.theme.startsWith("pixel-tree")
-        ? THEME_PIXEL_TREE[
-            settings.theme === "pixel-tree-light" ? "light" : "dark"
-          ].border
+      isPixelTree
+        ? pixelTreeTheme.border
         : settings.theme === "light"
         ? "#E5E7EB"
         : "#374151"
     )
-    document.documentElement.style.fontFamily = getFontValue(settings.font)
+    root.style.setProperty("--font-family", getFontValue(settings.font))
   }, [settings])
 
   // Close mobile menu when pathname changes
@@ -286,7 +280,7 @@ const AdminSidebar: React.FC = () => {
       <Button
         variant="outline"
         size="icon"
-        className="fixed top-4 left-4 z-50 lg:hidden"
+        className="fixed top-4 left-4 z-50 lg:hidden border-border text-text hover:bg-secondary/20"
         onClick={handleMobileToggle}
       >
         {isMobileOpen ? (
@@ -307,21 +301,18 @@ const AdminSidebar: React.FC = () => {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 left-0 h-screen flex flex-col border-r bg-[var(--background-color)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--background-color)]/60 transition-all duration-300 z-50",
+          "fixed top-0 left-0 h-screen flex flex-col border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 z-50",
           isCollapsed ? "w-16" : "w-72",
           "lg:translate-x-0",
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Header */}
-        <div
-          className="flex items-center justify-between p-4"
-          style={{ borderBottomColor: "var(--border-color)" }}
-        >
+        <div className="flex items-center justify-between p-4 border-b border-border">
           {!isCollapsed && (
             <h1
-              className="text-lg font-semibold bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] bg-clip-text text-transparent"
-              style={{ fontFamily: getFontValue(settings.font) }}
+              className="text-lg font-semibold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+              style={{ fontFamily: "var(--font-family)" }}
             >
               Admin Panel
             </h1>
@@ -356,18 +347,14 @@ const AdminSidebar: React.FC = () => {
         </nav>
 
         {/* Settings Dropdown */}
-        <div
-          className="border-t p-3"
-          style={{ borderTopColor: "var(--border-color)" }}
-        >
+        <div className="border-t border-border p-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
-                  "w-full transition-all duration-200",
-                  isCollapsed ? "justify-center px-0" : "justify-start",
-                  "border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--secondary-color)]/20"
+                  "w-full transition-all duration-200 border-border text-text hover:bg-secondary/20",
+                  isCollapsed ? "justify-center px-0" : "justify-start"
                 )}
               >
                 <Settings
@@ -378,13 +365,8 @@ const AdminSidebar: React.FC = () => {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
-              className="w-56"
+              className="w-56 bg-background text-text border-border"
               align="end"
-              style={{
-                backgroundColor: "var(--background-color)",
-                color: "var(--text-color)",
-                borderColor: "var(--border-color)",
-              }}
             >
               {/* Theme */}
               <DropdownMenuSub>
@@ -395,57 +377,31 @@ const AdminSidebar: React.FC = () => {
                   />
                   Theme
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent
-                  style={{
-                    backgroundColor: "var(--background-color)",
-                    color: "var(--text-color)",
-                    borderColor: "var(--border-color)",
-                  }}
-                >
-                  <DropdownMenuItem
-                    onClick={() => handleThemeChange("light")}
-                    className={cn(
-                      settings.theme === "light" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Light
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleThemeChange("dark")}
-                    className={cn(
-                      settings.theme === "dark" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Dark
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleThemeChange("pixel-tree-light")}
-                    className={cn(
-                      settings.theme === "pixel-tree-light" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Pixel Tree Light
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleThemeChange("pixel-tree-dark")}
-                    className={cn(
-                      settings.theme === "pixel-tree-dark" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Pixel Tree Dark
-                  </DropdownMenuItem>
+                <DropdownMenuSubContent className="bg-background text-text border-border">
+                  {["light", "dark", "pixel-tree-light", "pixel-tree-dark"].map(
+                    (theme) => (
+                      <DropdownMenuItem
+                        key={theme}
+                        onClick={() =>
+                          handleThemeChange(theme as Settings["theme"])
+                        }
+                        className={cn(
+                          settings.theme === theme &&
+                            "bg-secondary/20 text-text",
+                          "hover:bg-secondary/30"
+                        )}
+                        style={{
+                          color: "var(--text-color)",
+                          fontFamily: "var(--font-family)",
+                        }}
+                      >
+                        {theme
+                          .replace("pixel-tree-", "Pixel Tree ")
+                          .replace("-", " ")
+                          .replace(/\b\w/g, (c) => c.toUpperCase())}
+                      </DropdownMenuItem>
+                    )
+                  )}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
@@ -458,46 +414,25 @@ const AdminSidebar: React.FC = () => {
                   />
                   Color
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent
-                  style={{
-                    backgroundColor: "var(--background-color)",
-                    color: "var(--text-color)",
-                    borderColor: "var(--border-color)",
-                  }}
-                >
-                  <DropdownMenuItem
-                    onClick={() => handleColorChange("blue")}
-                    className={cn(
-                      settings.color === "blue" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Blue
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleColorChange("green")}
-                    className={cn(
-                      settings.color === "green" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Green
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleColorChange("red")}
-                    className={cn(
-                      settings.color === "red" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Red
-                  </DropdownMenuItem>
+                <DropdownMenuSubContent className="bg-background text-text border-border">
+                  {["blue", "green", "red"].map((color) => (
+                    <DropdownMenuItem
+                      key={color}
+                      onClick={() =>
+                        handleColorChange(color as "blue" | "green" | "red")
+                      }
+                      className={cn(
+                        settings.color === color && "bg-secondary/20 text-text",
+                        "hover:bg-secondary/30"
+                      )}
+                      style={{
+                        color: "var(--text-color)",
+                        fontFamily: "var(--font-family)",
+                      }}
+                    >
+                      {color.charAt(0).toUpperCase() + color.slice(1)}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
@@ -510,57 +445,27 @@ const AdminSidebar: React.FC = () => {
                   />
                   Font
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent
-                  style={{
-                    backgroundColor: "var(--background-color)",
-                    color: "var(--text-color)",
-                    borderColor: "var(--border-color)",
-                  }}
-                >
-                  <DropdownMenuItem
-                    onClick={() => handleFontChange("inter")}
-                    className={cn(
-                      settings.font === "inter" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Inter
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleFontChange("roboto")}
-                    className={cn(
-                      settings.font === "roboto" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Roboto
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleFontChange("open-sans")}
-                    className={cn(
-                      settings.font === "open-sans" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Open Sans
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => handleFontChange("gohu-nerd")}
-                    className={cn(
-                      settings.font === "gohu-nerd" &&
-                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
-                      "hover:bg-[var(--secondary-color)]/30"
-                    )}
-                    style={{ color: "var(--text-color)" }}
-                  >
-                    Gohu Nerd
-                  </DropdownMenuItem>
+                <DropdownMenuSubContent className="bg-background text-text border-border">
+                  {["inter", "roboto", "open-sans", "gohu-nerd"].map((font) => (
+                    <DropdownMenuItem
+                      key={font}
+                      onClick={() => handleFontChange(font as Settings["font"])}
+                      className={cn(
+                        settings.font === font && "bg-secondary/20 text-text",
+                        "hover:bg-secondary/30"
+                      )}
+                      style={{
+                        color: "var(--text-color)",
+                        fontFamily: "var(--font-family)",
+                      }}
+                    >
+                      {font
+                        .replace("open-sans", "Open Sans")
+                        .replace("gohu-nerd", "Gohu Nerd")
+                        .replace("-", " ")
+                        .replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </DropdownMenuItem>
+                  ))}
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
             </DropdownMenuContent>
