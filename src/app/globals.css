@@ -125,3 +125,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+[role="tab"] {
+  cursor: pointer;
+}
+.recharts-surface {
+  overflow: visible;
+}

@@ -33,6 +33,27 @@ export function ExpenseBarChart({
   timeFrame,
   percentageChange = 0,
 }: ExpenseBarChartProps) {
+  // State để theo dõi theme hiện tại
+  const [isDarkMode, setIsDarkMode] = React.useState(false)
+
+  // Theo dõi thay đổi theme
+  React.useEffect(() => {
+    const checkTheme = () => {
+      setIsDarkMode(document.documentElement.classList.contains("dark"))
+    }
+
+    // Check initial theme
+    checkTheme()
+
+    // Observer để theo dõi thay đổi class của html element
+    const observer = new MutationObserver(checkTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    })
+
+    return () => observer.disconnect()
+  }, [])
   // Group expenses by category
   const categoriesData = groupExpensesByCategory(expenses)
 
@@ -101,6 +122,28 @@ export function ExpenseBarChart({
     return null
   }
 
+  // Custom Bar component with theme-aware glow
+  const CustomBar = (props: any) => {
+    const { payload, x, y, width, height } = props
+    const color = payload.fill
+
+    return (
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        rx={5}
+        fill={color}
+        style={{
+          filter: isDarkMode
+            ? `drop-shadow(0 0 8px ${color}) drop-shadow(0 0 18px ${color}35)`
+            : "drop-shadow(0 2px 4px rgba(0,0,0,0.1))",
+        }}
+      />
+    )
+  }
+
   if (chartData.length === 0) {
     return (
       <Card className="h-full">
@@ -125,7 +168,7 @@ export function ExpenseBarChart({
           Chi tiêu {timeFrameLabel} - Top {chartData.length} danh mục
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="overflow-visible h-full">
         <ChartContainer config={chartConfig}>
           <BarChart
             accessibilityLayer
@@ -151,7 +194,12 @@ export function ExpenseBarChart({
               cursor={{ fill: "rgba(0, 0, 0, 0.1)" }}
               content={<CustomTooltip />}
             />
-            <Bar dataKey="amount" layout="vertical" radius={5}>
+            <Bar
+              dataKey="amount"
+              layout="vertical"
+              radius={5}
+              shape={<CustomBar />}
+            >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />
               ))}
@@ -159,13 +207,7 @@ export function ExpenseBarChart({
                 dataKey="category"
                 position="insideLeft"
                 offset={10}
-                className="fill-white font-medium text-sm"
-                formatter={(value: string) => {
-                  // Cắt ngắn tên danh mục nếu quá dài
-                  return value.length > 15
-                    ? value.substring(0, 15) + "..."
-                    : value
-                }}
+                className="fill-white font-semibold text-sm"
               />
             </Bar>
           </BarChart>

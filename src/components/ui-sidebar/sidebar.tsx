@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from "react"
 import { usePathname, useRouter } from "next/navigation"
-// import { Link } from "next/link"
 import { cn } from "@/lib/utils"
-import { useTranslation } from "react-i18next"
 import {
   LayoutDashboard,
   Settings,
@@ -13,7 +11,6 @@ import {
   Sun,
   Palette,
   Type,
-  Globe,
   Menu,
   X,
   ChartLine,
@@ -29,6 +26,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { THEME_PIXEL_TREE } from "@/lib/constants"
 
 // Types
 interface NavItem {
@@ -39,33 +37,32 @@ interface NavItem {
 }
 
 interface Settings {
-  theme: "light" | "dark"
+  theme: "light" | "dark" | "pixel-tree-light" | "pixel-tree-dark"
   color: "blue" | "green" | "red"
-  font: "inter" | "roboto" | "open-sans"
-  language: "vi" | "en"
+  font: "inter" | "roboto" | "open-sans" | "gohu-nerd"
   currency: "VND" | "USD"
 }
 
 // Navigation items
-const getNavItems = (t: (key: string) => string): NavItem[] => [
+const getNavItems = (): NavItem[] => [
   {
-    label: t("Dashboard"),
+    label: "Dashboard",
     icon: <LayoutDashboard className="h-5 w-5" />,
     href: "/",
   },
   {
-    label: t("Tasks"),
+    label: "Tasks",
     icon: <ClipboardList className="h-5 w-5" />,
     href: "/tasks",
   },
   {
-    label: t("Giá vàng"),
+    label: "Gold Price",
     icon: <ChartLine className="h-5 w-5" />,
     href: "/api/gold-price",
   },
 ]
 
-// NavItem component
+// NavItem component (unchanged)
 const NavItem: React.FC<{
   item: NavItem
   currentPath: string
@@ -76,21 +73,18 @@ const NavItem: React.FC<{
   const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
-  // Check if current item or any sub-item is active
   const isActive = currentPath === item.href
   const hasActiveSubItem = item.subItems?.some(
     (subItem) =>
       currentPath === subItem.href || currentPath.startsWith(subItem.href + "/")
   )
 
-  // Auto-expand if has active sub-item
   useEffect(() => {
     if (hasActiveSubItem && !isCollapsed) {
       setIsOpen(true)
     }
   }, [hasActiveSubItem, isCollapsed])
 
-  // Handle navigation
   const handleClick = (e: React.MouseEvent) => {
     if (item.subItems && !isCollapsed) {
       e.preventDefault()
@@ -127,7 +121,6 @@ const NavItem: React.FC<{
         >
           {item.icon}
         </div>
-
         {!isCollapsed && (
           <>
             <span className="flex-1 truncate">{item.label}</span>
@@ -143,8 +136,6 @@ const NavItem: React.FC<{
           </>
         )}
       </div>
-
-      {/* Sub-items */}
       {!isCollapsed && item.subItems && isOpen && (
         <div className="mt-1 space-y-1">
           {item.subItems.map((subItem) => (
@@ -165,42 +156,91 @@ const NavItem: React.FC<{
 
 // Main Sidebar component
 const AdminSidebar: React.FC = () => {
-  const { t, i18n } = useTranslation()
-  const pathname = usePathname() // Sử dụng usePathname thay vì router.pathname
+  const pathname = usePathname()
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [settings, setSettings] = useState<Settings>({
     theme: "light",
     color: "blue",
     font: "inter",
-    language: "vi",
     currency: "VND",
   })
+
+  // Load settings from localStorage on mount
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("adminSettings")
+    if (savedSettings) {
+      const parsedSettings: Settings = JSON.parse(savedSettings)
+      setSettings(parsedSettings)
+    }
+  }, [])
+
+  // Save settings to localStorage and apply theme/font
+  useEffect(() => {
+    localStorage.setItem("adminSettings", JSON.stringify(settings))
+    document.documentElement.classList.remove(
+      "light",
+      "dark",
+      "pixel-tree-light",
+      "pixel-tree-dark"
+    )
+    document.documentElement.classList.add(settings.theme)
+    document.documentElement.style.setProperty(
+      "--primary-color",
+      settings.theme.startsWith("pixel-tree")
+        ? THEME_PIXEL_TREE[
+            settings.theme === "pixel-tree-light" ? "light" : "dark"
+          ].primary
+        : getColorValue(settings.color)
+    )
+    document.documentElement.style.setProperty(
+      "--secondary-color",
+      settings.theme.startsWith("pixel-tree")
+        ? THEME_PIXEL_TREE[
+            settings.theme === "pixel-tree-light" ? "light" : "dark"
+          ].secondary
+        : getColorValue(settings.color)
+    )
+    document.documentElement.style.setProperty(
+      "--background-color",
+      settings.theme.startsWith("pixel-tree")
+        ? THEME_PIXEL_TREE[
+            settings.theme === "pixel-tree-light" ? "light" : "dark"
+          ].background
+        : settings.theme === "light"
+        ? "#FFFFFF"
+        : "#1F2937"
+    )
+    document.documentElement.style.setProperty(
+      "--text-color",
+      settings.theme.startsWith("pixel-tree")
+        ? THEME_PIXEL_TREE[
+            settings.theme === "pixel-tree-light" ? "light" : "dark"
+          ].text
+        : settings.theme === "light"
+        ? "#000000"
+        : "#FFFFFF"
+    )
+    document.documentElement.style.setProperty(
+      "--border-color",
+      settings.theme.startsWith("pixel-tree")
+        ? THEME_PIXEL_TREE[
+            settings.theme === "pixel-tree-light" ? "light" : "dark"
+          ].border
+        : settings.theme === "light"
+        ? "#E5E7EB"
+        : "#374151"
+    )
+    document.documentElement.style.fontFamily = getFontValue(settings.font)
+  }, [settings])
 
   // Close mobile menu when pathname changes
   useEffect(() => {
     setIsMobileOpen(false)
   }, [pathname])
 
-  // Apply theme and font
-  useEffect(() => {
-    document.documentElement.classList.remove("light", "dark")
-    document.documentElement.classList.add(settings.theme)
-    document.documentElement.style.setProperty(
-      "--primary-color",
-      getColorValue(settings.color)
-    )
-    document.documentElement.style.fontFamily = getFontValue(settings.font)
-  }, [settings.theme, settings.color, settings.font])
-
-  // Handle language change
-  const changeLanguage = (lang: "vi" | "en") => {
-    i18n.changeLanguage(lang)
-    setSettings((prev) => ({ ...prev, language: lang }))
-  }
-
   // Handle theme, color, font changes
-  const handleThemeChange = (theme: "light" | "dark") => {
+  const handleThemeChange = (theme: Settings["theme"]) => {
     setSettings((prev) => ({ ...prev, theme }))
   }
 
@@ -208,7 +248,7 @@ const AdminSidebar: React.FC = () => {
     setSettings((prev) => ({ ...prev, color }))
   }
 
-  const handleFontChange = (font: "inter" | "roboto" | "open-sans") => {
+  const handleFontChange = (font: Settings["font"]) => {
     setSettings((prev) => ({ ...prev, font }))
   }
 
@@ -227,6 +267,7 @@ const AdminSidebar: React.FC = () => {
       inter: "Inter, sans-serif",
       roboto: "Roboto, sans-serif",
       "open-sans": "Open Sans, sans-serif",
+      "gohu-nerd": "GohuFontNerd, monospace",
     }
     return fonts[font as keyof typeof fonts] || fonts.inter
   }
@@ -266,18 +307,23 @@ const AdminSidebar: React.FC = () => {
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed top-0 left-0 h-screen flex flex-col border-r bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 transition-all duration-300 z-50",
+          "fixed top-0 left-0 h-screen flex flex-col border-r bg-[var(--background-color)]/95 backdrop-blur supports-[backdrop-filter]:bg-[var(--background-color)]/60 transition-all duration-300 z-50",
           isCollapsed ? "w-16" : "w-72",
-          // Mobile responsive
           "lg:translate-x-0",
           isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+        <div
+          className="flex items-center justify-between p-4"
+          style={{ borderBottomColor: "var(--border-color)" }}
+        >
           {!isCollapsed && (
-            <h1 className="text-lg font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-              {t("admin_panel")}
+            <h1
+              className="text-lg font-semibold bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] bg-clip-text text-transparent"
+              style={{ fontFamily: getFontValue(settings.font) }}
+            >
+              Admin Panel
             </h1>
           )}
           <Button
@@ -291,13 +337,14 @@ const AdminSidebar: React.FC = () => {
                 "h-5 w-5 transition-transform duration-300",
                 isCollapsed && "rotate-180"
               )}
+              style={{ color: "var(--text-color)" }}
             />
           </Button>
         </div>
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-          {getNavItems(t).map((item) => (
+          {getNavItems().map((item) => (
             <NavItem
               key={item.href}
               item={item}
@@ -309,89 +356,210 @@ const AdminSidebar: React.FC = () => {
         </nav>
 
         {/* Settings Dropdown */}
-        <div className="border-t p-3">
+        <div
+          className="border-t p-3"
+          style={{ borderTopColor: "var(--border-color)" }}
+        >
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="outline"
                 className={cn(
                   "w-full transition-all duration-200",
-                  isCollapsed ? "justify-center px-0" : "justify-start"
+                  isCollapsed ? "justify-center px-0" : "justify-start",
+                  "border-[var(--border-color)] text-[var(--text-color)] hover:bg-[var(--secondary-color)]/20"
                 )}
               >
-                <Settings className="h-4 w-4" />
-                {!isCollapsed && <span className="ml-2">{t("settings")}</span>}
+                <Settings
+                  className="h-4 w-4"
+                  style={{ color: "var(--text-color)" }}
+                />
+                {!isCollapsed && <span className="ml-2">Settings</span>}
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end">
+            <DropdownMenuContent
+              className="w-56"
+              align="end"
+              style={{
+                backgroundColor: "var(--background-color)",
+                color: "var(--text-color)",
+                borderColor: "var(--border-color)",
+              }}
+            >
               {/* Theme */}
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Sun className="mr-2 h-4 w-4" />
-                  {t("theme")}
+                <DropdownMenuSubTrigger style={{ color: "var(--text-color)" }}>
+                  <Sun
+                    className="mr-2 h-4 w-4"
+                    style={{ color: "var(--text-color)" }}
+                  />
+                  Theme
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleThemeChange("light")}>
-                    {t("light")}
+                <DropdownMenuSubContent
+                  style={{
+                    backgroundColor: "var(--background-color)",
+                    color: "var(--text-color)",
+                    borderColor: "var(--border-color)",
+                  }}
+                >
+                  <DropdownMenuItem
+                    onClick={() => handleThemeChange("light")}
+                    className={cn(
+                      settings.theme === "light" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Light
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleThemeChange("dark")}>
-                    {t("dark")}
+                  <DropdownMenuItem
+                    onClick={() => handleThemeChange("dark")}
+                    className={cn(
+                      settings.theme === "dark" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Dark
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleThemeChange("pixel-tree-light")}
+                    className={cn(
+                      settings.theme === "pixel-tree-light" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Pixel Tree Light
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleThemeChange("pixel-tree-dark")}
+                    className={cn(
+                      settings.theme === "pixel-tree-dark" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Pixel Tree Dark
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
               {/* Color */}
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Palette className="mr-2 h-4 w-4" />
-                  {t("color")}
+                <DropdownMenuSubTrigger style={{ color: "var(--text-color)" }}>
+                  <Palette
+                    className="mr-2 h-4 w-4"
+                    style={{ color: "var(--text-color)" }}
+                  />
+                  Color
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleColorChange("blue")}>
-                    {t("blue")}
+                <DropdownMenuSubContent
+                  style={{
+                    backgroundColor: "var(--background-color)",
+                    color: "var(--text-color)",
+                    borderColor: "var(--border-color)",
+                  }}
+                >
+                  <DropdownMenuItem
+                    onClick={() => handleColorChange("blue")}
+                    className={cn(
+                      settings.color === "blue" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Blue
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleColorChange("green")}>
-                    {t("green")}
+                  <DropdownMenuItem
+                    onClick={() => handleColorChange("green")}
+                    className={cn(
+                      settings.color === "green" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Green
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleColorChange("red")}>
-                    {t("red")}
+                  <DropdownMenuItem
+                    onClick={() => handleColorChange("red")}
+                    className={cn(
+                      settings.color === "red" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Red
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>
 
               {/* Font */}
               <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Type className="mr-2 h-4 w-4" />
-                  {t("font")}
+                <DropdownMenuSubTrigger style={{ color: "var(--text-color)" }}>
+                  <Type
+                    className="mr-2 h-4 w-4"
+                    style={{ color: "var(--text-color)" }}
+                  />
+                  Font
                 </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => handleFontChange("inter")}>
+                <DropdownMenuSubContent
+                  style={{
+                    backgroundColor: "var(--background-color)",
+                    color: "var(--text-color)",
+                    borderColor: "var(--border-color)",
+                  }}
+                >
+                  <DropdownMenuItem
+                    onClick={() => handleFontChange("inter")}
+                    className={cn(
+                      settings.font === "inter" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
                     Inter
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleFontChange("roboto")}>
+                  <DropdownMenuItem
+                    onClick={() => handleFontChange("roboto")}
+                    className={cn(
+                      settings.font === "roboto" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
                     Roboto
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleFontChange("open-sans")}
+                    className={cn(
+                      settings.font === "open-sans" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
                   >
                     Open Sans
                   </DropdownMenuItem>
-                </DropdownMenuSubContent>
-              </DropdownMenuSub>
-
-              {/* Language */}
-              <DropdownMenuSub>
-                <DropdownMenuSubTrigger>
-                  <Globe className="mr-2 h-4 w-4" />
-                  {t("language")}
-                </DropdownMenuSubTrigger>
-                <DropdownMenuSubContent>
-                  <DropdownMenuItem onClick={() => changeLanguage("vi")}>
-                    Tiếng Việt
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => changeLanguage("en")}>
-                    English
+                  <DropdownMenuItem
+                    onClick={() => handleFontChange("gohu-nerd")}
+                    className={cn(
+                      settings.font === "gohu-nerd" &&
+                        "bg-[var(--secondary-color)]/20 text-[var(--text-color)]",
+                      "hover:bg-[var(--secondary-color)]/30"
+                    )}
+                    style={{ color: "var(--text-color)" }}
+                  >
+                    Gohu Nerd
                   </DropdownMenuItem>
                 </DropdownMenuSubContent>
               </DropdownMenuSub>

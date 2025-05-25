@@ -140,6 +140,23 @@ export const CATEGORY_COLORS_2 = {
   "Tiền vay": "#FCA5A5", // đỏ cam nhạt
 }
 
+export const THEME_PIXEL_TREE = {
+  light: {
+    background: "#FFFFFF", // nền trắng cho độ sáng cao
+    text: "#000000", // chữ đen cho dễ đọc
+    border: "#C4F129", // viền xanh sáng nhẹ, nổi bật
+    primary: "#61A53F", // màu xanh lá trung tính cho nút chính
+    secondary: "#8FD032", // xanh vàng sáng làm nền phụ
+  },
+  dark: {
+    background: "#1F2937", // nền tối chuẩn
+    text: "#FFFFFF", // chữ trắng
+    border: "#477238", // viền xanh đậm, dịu mắt trên nền tối
+    primary: "#61A53F", // giữ màu consistent với light
+    secondary: "#8FD032", // đủ sáng để nổi bật trên dark
+  },
+}
+
 export const DEFAULT_USER_DATA: UserData = {
   name: "",
   expenses: [],

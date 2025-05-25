@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Expense, TimeFrame } from "@/lib/types"
@@ -24,13 +22,8 @@ import {
 } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-
-interface ExpenseSummaryProps {
-  expenses: Expense[]
-  defaultTimeFrame?: TimeFrame
-  onTimeFrameChange?: (timeFrame: TimeFrame) => void
-  onPercentageChange?: (percentage: number) => void
-}
+import { cn } from "@/lib/utils"
+import "../css/tabs-custom.css"
 
 // Map của danh mục chính đến icon tương ứng
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
@@ -43,6 +36,13 @@ const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   "Tiền vay": <CoinsIcon className="w-5 h-5" />,
 }
 
+interface ExpenseSummaryProps {
+  expenses: Expense[]
+  defaultTimeFrame?: TimeFrame
+  onTimeFrameChange?: (timeFrame: TimeFrame) => void
+  onPercentageChange?: (percentage: number) => void
+}
+
 export function ExpenseSummary({
   expenses,
   defaultTimeFrame = "month",
@@ -50,13 +50,26 @@ export function ExpenseSummary({
   onPercentageChange,
 }: ExpenseSummaryProps) {
   const [timeFrame, setTimeFrame] = React.useState<TimeFrame>(defaultTimeFrame)
-  const [previousPeriodExpenses, setPreviousPreviodExpenses] = React.useState<
+  const [previousPeriodExpenses, setPreviousPeriodExpenses] = React.useState<
     Expense[]
   >([])
   const [isFullColorMode, setIsFullColorMode] = React.useState(false)
 
+  // Load color mode from localStorage on mount
   React.useEffect(() => {
-    // Calculate previous period expenses based on current timeFrame
+    const savedColorMode = localStorage.getItem("expenseColorMode")
+    if (savedColorMode) {
+      setIsFullColorMode(JSON.parse(savedColorMode))
+    }
+  }, [])
+
+  // Save color mode to localStorage when it changes
+  React.useEffect(() => {
+    localStorage.setItem("expenseColorMode", JSON.stringify(isFullColorMode))
+  }, [isFullColorMode])
+
+  // Calculate previous period expenses
+  React.useEffect(() => {
     const now = new Date()
     const previousPeriodStart = new Date()
 
@@ -75,7 +88,6 @@ export function ExpenseSummary({
         return
     }
 
-    // Filter expenses for previous period
     const previousPeriod = expenses.filter((expense) => {
       const expenseDate = new Date(expense.timestamp)
       return (
@@ -88,7 +100,7 @@ export function ExpenseSummary({
       )
     })
 
-    setPreviousPreviodExpenses(previousPeriod)
+    setPreviousPeriodExpenses(previousPeriod)
   }, [expenses, timeFrame])
 
   // Filter expenses based on selected timeFrame
@@ -98,25 +110,21 @@ export function ExpenseSummary({
 
     switch (timeFrame) {
       case "week":
-        // Bắt đầu từ thứ 2 của tuần này
         const dayOfWeek = now.getDay()
         const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
         startDate.setDate(diff)
         startDate.setHours(0, 0, 0, 0)
         break
       case "month":
-        // Bắt đầu từ ngày 1 của tháng hiện tại
         startDate.setDate(1)
         startDate.setHours(0, 0, 0, 0)
         break
       case "year":
-        // Bắt đầu từ ngày 1 tháng 1 của năm hiện tại
         startDate.setMonth(0, 1)
         startDate.setHours(0, 0, 0, 0)
         break
       case "all":
       default:
-        // Tất cả thời gian
         return expenses
     }
 
@@ -140,9 +148,9 @@ export function ExpenseSummary({
   // Sort categories by amount (descending)
   const sortedCategories = Object.entries(categoriesData)
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 9) // lấy top 9 danh mục
+    .slice(0, 9)
 
-  // Time frame label
+  // Time frame labels (static, in Vietnamese)
   const timeFrameLabel = {
     week: "tuần này",
     month: "tháng này",
@@ -167,8 +175,6 @@ export function ExpenseSummary({
     setTimeFrame(value as TimeFrame)
   }
 
-  // Helper function to get contrasting text color
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
@@ -178,10 +184,14 @@ export function ExpenseSummary({
             variant="outline"
             size="sm"
             onClick={() => setIsFullColorMode(!isFullColorMode)}
-            className="flex items-center gap-2"
+            className={cn(
+              "flex items-center gap-2 cursor-pointer hover:text-none transition-all duration-500 hover:scale-101",
+              isFullColorMode &&
+                "text-white bg-linear-65 from-purple-500 to-pink-500 hover:bg-linear-to-bl from-violet-500 to-fuchsia-500"
+            )}
           >
             <PaletteIcon className="w-4 h-4" />
-            {isFullColorMode ? "Chế độ thường" : "Chế độ màu sắc"}
+            {isFullColorMode ? "Chế độ màu sắc" : "Chế độ thường"}
           </Button>
           <div className="flex items-center">
             <CalendarIcon className="mr-2 h-4 w-4 text-muted-foreground" />
@@ -190,11 +200,19 @@ export function ExpenseSummary({
               onValueChange={handleTimeFrameChange}
               className="w-full"
             >
-              <TabsList>
-                <TabsTrigger value="week">Tuần này</TabsTrigger>
-                <TabsTrigger value="month">Tháng này</TabsTrigger>
-                <TabsTrigger value="year">Năm này</TabsTrigger>
-                <TabsTrigger value="all">Tất cả</TabsTrigger>
+              <TabsList className="custom-tabs-list">
+                <TabsTrigger className="custom-tab-trigger" value="week">
+                  Tuần này
+                </TabsTrigger>
+                <TabsTrigger className="custom-tab-trigger" value="month">
+                  Tháng này
+                </TabsTrigger>
+                <TabsTrigger className="custom-tab-trigger" value="year">
+                  Năm này
+                </TabsTrigger>
+                <TabsTrigger className="custom-tab-trigger" value="all">
+                  Tất cả
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -315,7 +333,6 @@ export function ExpenseSummary({
                       isFullColorMode ? "bg-white" : "bg-gray-200"
                     }`}
                   >
-                    {/* process bar */}
                     <div
                       className="h-1.5 rounded-full"
                       style={{
