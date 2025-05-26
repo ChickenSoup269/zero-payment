@@ -102,7 +102,7 @@ const NavItem: React.FC<{
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer group",
           isActive || hasActiveSubItem
-            ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-text font-medium shadow-sm"
+            ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-text font-bold shadow-sm text-white"
             : "text-text hover:bg-secondary/20 hover:text-text",
           isCollapsed
             ? "justify-center"

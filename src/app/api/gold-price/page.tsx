@@ -26,7 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Download,
   RefreshCw,
-  Clock,
+  // Clock,
   Database,
   AlertCircle,
   CheckCircle,
@@ -451,7 +451,7 @@ const GoldPriceTracker = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-amber-50 to-orange-50 p-4">
+    <div className="min-h-screen p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
