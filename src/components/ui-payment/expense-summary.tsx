@@ -50,9 +50,6 @@ export function ExpenseSummary({
   onPercentageChange,
 }: ExpenseSummaryProps) {
   const [timeFrame, setTimeFrame] = React.useState<TimeFrame>(defaultTimeFrame)
-  const [previousPeriodExpenses, setPreviousPeriodExpenses] = React.useState<
-    Expense[]
-  >([])
   const [isFullColorMode, setIsFullColorMode] = React.useState(false)
 
   // Load color mode from localStorage on mount
@@ -68,51 +65,17 @@ export function ExpenseSummary({
     localStorage.setItem("expenseColorMode", JSON.stringify(isFullColorMode))
   }, [isFullColorMode])
 
-  // Calculate previous period expenses
-  React.useEffect(() => {
-    const now = new Date()
-    const previousPeriodStart = new Date()
-
-    switch (timeFrame) {
-      case "week":
-        previousPeriodStart.setDate(now.getDate() - 7)
-        break
-      case "month":
-        previousPeriodStart.setMonth(now.getMonth() - 1)
-        break
-      case "year":
-        previousPeriodStart.setFullYear(now.getFullYear() - 1)
-        break
-      default:
-        // For 'all', we don't have a previous period
-        return
-    }
-
-    const previousPeriod = expenses.filter((expense) => {
-      const expenseDate = new Date(expense.timestamp)
-      return (
-        expenseDate >= previousPeriodStart &&
-        expenseDate <
-          new Date(
-            previousPeriodStart.getTime() +
-              (now.getTime() - previousPeriodStart.getTime())
-          )
-      )
-    })
-
-    setPreviousPeriodExpenses(previousPeriod)
-  }, [expenses, timeFrame])
-
-  // Filter expenses based on selected timeFrame
-  const filteredExpenses = React.useMemo(() => {
+  // Helper function to get date range for current period
+  const getCurrentPeriodRange = (timeFrame: TimeFrame) => {
     const now = new Date()
     const startDate = new Date()
 
     switch (timeFrame) {
       case "week":
-        const dayOfWeek = now.getDay()
-        const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1)
-        startDate.setDate(diff)
+        // Tìm thứ 2 của tuần hiện tại
+        const dayOfWeek = now.getDay() // 0 = Chủ nhật, 1 = Thứ 2...
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Số ngày từ thứ 2
+        startDate.setDate(now.getDate() - daysFromMonday)
         startDate.setHours(0, 0, 0, 0)
         break
       case "month":
@@ -125,22 +88,120 @@ export function ExpenseSummary({
         break
       case "all":
       default:
-        return expenses
+        return null
     }
 
+    return { startDate, endDate: now }
+  }
+
+  // Helper function to get date range for previous period
+  const getPreviousPeriodRange = (timeFrame: TimeFrame) => {
+    const now = new Date()
+
+    switch (timeFrame) {
+      case "week": {
+        // Tìm thứ 2 của tuần trước
+        const dayOfWeek = now.getDay()
+        const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+        const thisWeekMonday = new Date(now)
+        thisWeekMonday.setDate(now.getDate() - daysFromMonday)
+
+        const prevWeekMonday = new Date(thisWeekMonday)
+        prevWeekMonday.setDate(thisWeekMonday.getDate() - 7)
+        prevWeekMonday.setHours(0, 0, 0, 0)
+
+        const prevWeekSunday = new Date(prevWeekMonday)
+        prevWeekSunday.setDate(prevWeekMonday.getDate() + 6)
+        prevWeekSunday.setHours(23, 59, 59, 999)
+
+        return { startDate: prevWeekMonday, endDate: prevWeekSunday }
+      }
+      case "month": {
+        const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+        const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0)
+        lastDayPrevMonth.setHours(23, 59, 59, 999)
+
+        return { startDate: prevMonth, endDate: lastDayPrevMonth }
+      }
+      case "year": {
+        const prevYear = new Date(now.getFullYear() - 1, 0, 1)
+        const lastDayPrevYear = new Date(now.getFullYear() - 1, 11, 31)
+        lastDayPrevYear.setHours(23, 59, 59, 999)
+
+        return { startDate: prevYear, endDate: lastDayPrevYear }
+      }
+      default:
+        return null
+    }
+  }
+
+  // Filter expenses based on selected timeFrame
+  const filteredExpenses = React.useMemo(() => {
+    const currentRange = getCurrentPeriodRange(timeFrame)
+    if (!currentRange) return expenses
+
+    const { startDate } = currentRange
     return expenses.filter(
       (expense) => new Date(expense.timestamp) >= startDate
     )
+  }, [expenses, timeFrame])
+
+  // Calculate previous period expenses
+  const previousPeriodExpenses = React.useMemo(() => {
+    const prevRange = getPreviousPeriodRange(timeFrame)
+    if (!prevRange) return []
+
+    const { startDate, endDate } = prevRange
+    return expenses.filter((expense) => {
+      const expenseDate = new Date(expense.timestamp)
+      return expenseDate >= startDate && expenseDate <= endDate
+    })
   }, [expenses, timeFrame])
 
   const totalExpenses = calculateTotalExpenses(filteredExpenses)
   const previousTotalExpenses = calculateTotalExpenses(previousPeriodExpenses)
 
   // Calculate percentage change
-  const percentageChange =
-    previousTotalExpenses === 0
-      ? 100
-      : ((totalExpenses - previousTotalExpenses) / previousTotalExpenses) * 100
+  const percentageChange = React.useMemo(() => {
+    if (timeFrame === "all") return 0
+    if (previousTotalExpenses === 0) {
+      return totalExpenses > 0 ? 100 : 0
+    }
+    const change =
+      ((totalExpenses - previousTotalExpenses) / previousTotalExpenses) * 100
+
+    // Debug log - bạn có thể mở browser console để xem
+    if (timeFrame === "week") {
+      const currentRange = getCurrentPeriodRange(timeFrame)
+      const prevRange = getPreviousPeriodRange(timeFrame)
+      console.log("=== DEBUG TUẦN ===")
+      console.log(
+        "Tuần này:",
+        currentRange?.startDate.toLocaleDateString(),
+        "đến",
+        new Date().toLocaleDateString()
+      )
+      console.log(
+        "Tuần trước:",
+        prevRange?.startDate.toLocaleDateString(),
+        "đến",
+        prevRange?.endDate.toLocaleDateString()
+      )
+      console.log("Chi tiêu tuần này:", totalExpenses)
+      console.log("Chi tiêu tuần trước:", previousTotalExpenses)
+      console.log("Phần trăm thay đổi:", change)
+      console.log("Số expenses tuần này:", filteredExpenses.length)
+      console.log("Số expenses tuần trước:", previousPeriodExpenses.length)
+    }
+
+    return change
+  }, [
+    totalExpenses,
+    previousTotalExpenses,
+    timeFrame,
+    filteredExpenses.length,
+    previousPeriodExpenses.length,
+  ])
 
   // Group expenses by category
   const categoriesData = groupExpensesByCategory(filteredExpenses)
@@ -156,6 +217,13 @@ export function ExpenseSummary({
     month: "tháng này",
     year: "năm này",
     all: "tất cả thời gian",
+  }[timeFrame]
+
+  const previousTimeFrameLabel = {
+    week: "tuần trước",
+    month: "tháng trước",
+    year: "năm trước",
+    all: "",
   }[timeFrame]
 
   // Notify parent component about changes
@@ -236,23 +304,37 @@ export function ExpenseSummary({
             </div>
             {timeFrame !== "all" && (
               <div className="flex items-center mt-2 text-sm">
-                {percentageChange > 0 ? (
-                  <>
-                    <ArrowUpIcon className="w-4 h-4 text-red-500 mr-1" />
-                    <span className="text-red-500">
-                      {percentageChange.toFixed(1)}%
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <ArrowDownIcon className="w-4 h-4 text-green-500 mr-1" />
-                    <span className="text-green-500">
-                      {Math.abs(percentageChange).toFixed(1)}%
-                    </span>
-                  </>
-                )}
+                {(() => {
+                  console.log(
+                    "RENDER CHECK - percentageChange:",
+                    percentageChange,
+                    "Type:",
+                    typeof percentageChange
+                  )
+                  if (percentageChange > 0) {
+                    return (
+                      <>
+                        <ArrowUpIcon className="w-4 h-4 text-red-500 mr-1" />
+                        <span className="text-red-500">
+                          +{percentageChange.toFixed(1)}%
+                        </span>
+                      </>
+                    )
+                  } else if (percentageChange < 0) {
+                    return (
+                      <>
+                        <ArrowDownIcon className="w-4 h-4 text-green-500 mr-1" />
+                        <span className="text-green-500">
+                          {percentageChange.toFixed(1)}%
+                        </span>
+                      </>
+                    )
+                  } else {
+                    return <span className="text-gray-500">0.0%</span>
+                  }
+                })()}
                 <span className="ml-1 text-muted-foreground">
-                  so với kỳ trước
+                  so với {previousTimeFrameLabel}
                 </span>
               </div>
             )}
