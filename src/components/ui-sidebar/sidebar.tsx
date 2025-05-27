@@ -254,6 +254,7 @@ const AdminSidebar: React.FC = () => {
       blue: "#3B82F6",
       green: "#10B981",
       red: "#EF4444",
+      yellow: "#F59E0B",
     }
     return colors[color as keyof typeof colors] || colors.blue
   }
@@ -417,11 +418,13 @@ const AdminSidebar: React.FC = () => {
                   Color
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="bg-background text-text border-border">
-                  {["blue", "green", "red"].map((color) => (
+                  {["blue", "green", "red", "yellow"].map((color) => (
                     <DropdownMenuItem
                       key={color}
                       onClick={() =>
-                        handleColorChange(color as "blue" | "green" | "red")
+                        handleColorChange(
+                          color as "blue" | "green" | "red" | "yellow"
+                        )
                       }
                       className={cn(
                         settings.color === color && "bg-secondary/20 text-text",
