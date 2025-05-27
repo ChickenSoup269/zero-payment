@@ -2,7 +2,7 @@
 
 /* Custom TabsList container */
 .custom-tabs-list {
-  background-color: var(--background-color); /* Use theme background color */
+  background-color: transparent; /* Use theme background color */
   padding: 0.25rem; /* p-1 */
   border-radius: 0.5rem; /* rounded-lg */
   display: flex;
@@ -34,9 +34,9 @@
 /* Active state */
 .custom-tab-trigger[data-state="active"] {
   background-color: var(
-    --background-color
+    --primary-color
   ); /* Use theme background for active tab */
-  color: var(--primary-color); /* Use primary color for active text */
+  color: white;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); /* shadow-sm */
 }
 

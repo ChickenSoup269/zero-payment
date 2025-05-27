@@ -220,9 +220,9 @@ export function ExpenseSummary({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="overflow-hidden border-l-4 border-l-blue-500">
+        <Card className="overflow-hidden border-l-4 border-[var(--primary-color)">
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-sm text-muted-foreground bg">
               Tổng chi tiêu {timeFrameLabel}
             </div>
             <div className="text-2xl font-bold">

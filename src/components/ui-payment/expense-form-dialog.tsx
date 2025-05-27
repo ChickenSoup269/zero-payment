@@ -23,7 +23,7 @@ export function ExpenseFormDialog({ onAddExpense }: ExpenseFormDialogProps) {
     <>
       <Button
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-2 bg-[var(--secondary-color)] text-white cursor-pointer hover:bg-[var(--primary-color)]"
+        className="flex items-center gap-2 bg-[var(--primary-color)] text-white cursor-pointer hover:bg-[var(--secondary-color)]"
         size="sm"
       >
         <Plus className="w-5 h-5" />

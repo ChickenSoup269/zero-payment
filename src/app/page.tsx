@@ -176,7 +176,7 @@ export default function ExpenseDashboard() {
   return (
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[var(--secondary-color)]">
+        <h1 className="text-3xl font-bold text-[var(--primary-color)]">
           Quản lý chi tiêu
         </h1>
         <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ export default function ExpenseDashboard() {
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">File:</span>
             <select
-              className="text-sm border rounded p-1"
+              className="text-sm border rounded p-1 cursor-pointer"
               value={currentFile}
               onChange={(e) => setCurrentFile(e.target.value)}
             >
@@ -200,6 +200,7 @@ export default function ExpenseDashboard() {
               onClick={() => setShowNewFileModal(true)}
               variant="outline"
               size="sm"
+              className="cursor-pointer"
             >
               Tạo file mới
             </Button>
@@ -217,6 +218,7 @@ export default function ExpenseDashboard() {
             onClick={() => router.push("/compare")}
             variant="outline"
             size="sm"
+            className="cursor-pointer"
           >
             So sánh dữ liệu
           </Button>

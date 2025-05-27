@@ -199,7 +199,9 @@ const AdminSidebar: React.FC = () => {
     )
     root.style.setProperty(
       "--secondary-color",
-      isPixelTree ? pixelTreeTheme.secondary : getColorValue(settings.color)
+      isPixelTree
+        ? pixelTreeTheme?.secondary ?? getColorValue(settings.color)
+        : getColorValue(settings.color)
     )
     root.style.setProperty(
       "--background-color",
