@@ -36,6 +36,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog"
+import "@/components/css/tabs-custom.css"
 
 export default function ExpenseDashboard() {
   const [userData, setUserData] = useState<UserData>(DEFAULT_USER_DATA)
@@ -253,12 +254,17 @@ export default function ExpenseDashboard() {
 
       <Tabs defaultValue="chart" className="mb-6">
         <div className="flex justify-between items-center mb-4">
-          <TabsList>
-            <TabsTrigger value="chart" className="flex items-center gap-2">
+          <TabsList className=" ">
+            <TabsTrigger
+              value="chart"
+              className="custom-tab-trigger flex items-center gap-2"
+            >
               {getChartIcon()}
               Biểu đồ
             </TabsTrigger>
-            <TabsTrigger value="table">Danh sách chi tiêu</TabsTrigger>
+            <TabsTrigger className="custom-tab-trigger " value="table">
+              Danh sách chi tiêu
+            </TabsTrigger>
           </TabsList>
 
           <FileImportExport

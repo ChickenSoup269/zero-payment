@@ -220,12 +220,18 @@ export function ExpenseSummary({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="overflow-hidden border-l-4 border-[var(--primary-color)">
+        <Card
+          className={`overflow-hidden border-l-4 border-[var(--primary-color)] ${
+            isFullColorMode
+              ? "text-[var(--primary-color)] "
+              : "bg-white bg-opacity-20"
+          }`}
+        >
           <CardContent className="pt-6">
-            <div className="text-sm text-muted-foreground bg">
+            <div className="text-sm text-muted-foreground">
               Tổng chi tiêu {timeFrameLabel}
             </div>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold ">
               {formatCurrency(totalExpenses)}
             </div>
             {timeFrame !== "all" && (
