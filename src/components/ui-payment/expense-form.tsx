@@ -23,7 +23,7 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { Expense } from "@/lib/types"
 import { EXPENSE_CATEGORIES, DESCRIPTION_SUGGESTIONS } from "@/lib/constants"
-import { getCurrentDateFormatted, generateUniqueId } from "@/lib/utils"
+import { generateUniqueId } from "@/lib/utils" // Xóa getCurrentDateFormatted nếu không cần
 import {
   Popover,
   PopoverContent,
@@ -31,10 +31,10 @@ import {
 } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
 import { CalendarIcon, Clock } from "lucide-react"
-import { format } from "date-fns"
+import { format, parse } from "date-fns"
 import { vi } from "date-fns/locale"
 
-// Hàm đọc số tiền thành chữ
+// Hàm đọc số tiền thành chữ (giữ nguyên)
 const unitText = [
   "",
   "một",
@@ -56,7 +56,6 @@ function readThreeDigits(number: number, hasScale = false): string {
   const units = remainder % 10
 
   let result = ""
-
   if (hundreds > 0) {
     result += unitText[hundreds] + " trăm "
   } else if (hasScale && (tens > 0 || units > 0)) {
@@ -83,9 +82,7 @@ function readThreeDigits(number: number, hasScale = false): string {
 }
 
 const formatCurrency = (value: string): string => {
-  // Loại bỏ tất cả các ký tự không phải số
   const numericValue = value.replace(/\D/g, "")
-  // Chuyển thành số và định dạng với dấu chấm
   return numericValue === "" ? "" : Number(numericValue).toLocaleString("vi-VN")
 }
 
@@ -101,11 +98,9 @@ function readNumber(number: number): string {
   do {
     const hasScale = index !== lastIndex || Math.floor(absNumber / 1000) > 0
     const threeDigits = readThreeDigits(absNumber % 1000, hasScale)
-
     if (threeDigits) {
       result = `${threeDigits} ${scaleTexts[index]} ${result}`
     }
-
     absNumber = Math.floor(absNumber / 1000)
     index++
   } while (absNumber > 0)
@@ -154,7 +149,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
       category: "",
       subcategory: "",
       description: "",
-      date: getCurrentDateFormatted(),
+      date: format(new Date(), "yyyy-MM-dd"), // Ngày hiện tại
       time: format(new Date(), "HH:mm"),
     },
   })
@@ -169,7 +164,6 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
       ? EXPENSE_CATEGORIES[selectedCategory as ExpenseCategoryKey] || []
       : []
 
-  // Lấy gợi ý mô tả dựa trên danh mục và danh mục con đã chọn
   const descriptionSuggestions = React.useMemo(() => {
     if (selectedCategory && selectedSubcategory) {
       return (
@@ -179,31 +173,31 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
     return []
   }, [selectedCategory, selectedSubcategory])
 
-  // Theo dõi trạng thái hiển thị popover gợi ý
   const [showSuggestions, setShowSuggestions] = React.useState(false)
-
-  // Theo dõi trạng thái hiển thị popover lịch
   const [calendarOpen, setCalendarOpen] = React.useState(false)
-
-  // Theo dõi focus của textarea
   const textareaRef = React.useRef<HTMLTextAreaElement>(null)
 
-  // Reset subcategory when category changes
   React.useEffect(() => {
     if (selectedCategory) {
       form.setValue("subcategory", "")
     }
   }, [selectedCategory, form])
 
-  // Xử lý sự kiện phím Tab để hiển thị gợi ý
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Tab" && descriptionSuggestions.length > 0) {
-      e.preventDefault() // Ngăn không cho tab chuyển focus
+      e.preventDefault()
       setShowSuggestions(true)
     }
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
+    const dateTimeStr = `${values.date}T${values.time || "00:00"}`
+    const timestamp = parse(
+      dateTimeStr,
+      "yyyy-MM-dd'T'HH:mm",
+      new Date()
+    ).getTime()
+
     const expense: Expense = {
       id: generateUniqueId(),
       amount: values.amount,
@@ -212,16 +206,17 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
       description: values.description || "",
       date: values.date,
       time: values.time || format(new Date(), "HH:mm"),
-      timestamp: new Date().getTime(),
+      timestamp: timestamp,
     }
 
+    console.log("New expense:", expense)
     onAddExpense(expense)
     form.reset({
       amount: 0,
       category: "",
       subcategory: "",
       description: "",
-      date: getCurrentDateFormatted(),
+      date: format(new Date(), "yyyy-MM-dd"), // Reset về ngày hiện tại
       time: format(new Date(), "HH:mm"),
     })
   }
@@ -242,11 +237,8 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                     field.value ? formatCurrency(field.value.toString()) : ""
                   }
                   onChange={(e) => {
-                    // Lấy giá trị đã nhập
                     const formatted = formatCurrency(e.target.value)
-                    // Hiển thị giá trị đã định dạng
                     e.target.value = formatted
-                    // Chuyển về số nguyên để lưu vào form
                     field.onChange(
                       formatted ? parseInt(formatted.replace(/\./g, ""), 10) : 0
                     )
@@ -343,7 +335,6 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                     onKeyDown={handleKeyDown}
                     onFocus={() => {
                       if (descriptionSuggestions.length > 0) {
-                        // Hiển thị gợi ý nhỏ khi focus
                         setShowSuggestions(false)
                       }
                     }}
@@ -378,7 +369,6 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                               onClick={() => {
                                 form.setValue("description", suggestion)
                                 setShowSuggestions(false)
-                                // Focus lại vào textarea sau khi chọn gợi ý
                                 setTimeout(
                                   () => textareaRef.current?.focus(),
                                   100
@@ -413,7 +403,9 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                         variant="outline"
                         className="w-full pl-3 text-left font-normal flex justify-between items-center"
                       >
-                        {field.value || "Chọn ngày"}
+                        {field.value
+                          ? format(new Date(field.value), "dd/MM/yyyy")
+                          : "Chọn ngày"}
                         <CalendarIcon className="h-4 w-4 opacity-50" />
                       </Button>
                     </FormControl>
@@ -421,7 +413,7 @@ export function ExpenseForm({ onAddExpense }: ExpenseFormProps) {
                   <PopoverContent className="w-auto p-0" align="start">
                     <Calendar
                       mode="single"
-                      selected={new Date(field.value)}
+                      selected={field.value ? new Date(field.value) : undefined}
                       onSelect={(date) => {
                         if (date) {
                           field.onChange(format(date, "yyyy-MM-dd"))

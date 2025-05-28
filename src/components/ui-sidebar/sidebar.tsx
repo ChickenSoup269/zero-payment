@@ -20,10 +20,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { THEME_PIXEL_TREE } from "@/lib/constants"
@@ -38,7 +38,7 @@ interface NavItem {
 
 interface Settings {
   theme: "light" | "dark" | "pixel-tree-light" | "pixel-tree-dark"
-  color: "blue" | "green" | "red"
+  color: "blue" | "green" | "red" | "yellow" | "normal"
   font: "inter" | "roboto" | "open-sans" | "gohu-nerd"
   currency: "VND" | "USD"
 }
@@ -102,7 +102,7 @@ const NavItem: React.FC<{
         className={cn(
           "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-all duration-200 cursor-pointer group",
           isActive || hasActiveSubItem
-            ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-text font-bold shadow-sm text-white"
+            ? "bg-gradient-to-r from-[var(--primary-color)] to-[var(--secondary-color)] text-text font-bold shadow-sm text-white "
             : "text-text hover:bg-secondary/20 hover:text-text",
           isCollapsed
             ? "justify-center"
@@ -160,7 +160,7 @@ const AdminSidebar: React.FC = () => {
   const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [settings, setSettings] = useState<Settings>({
     theme: "light",
-    color: "blue",
+    color: "normal", // Default to "normal"
     font: "inter",
     currency: "VND",
   })
@@ -187,22 +187,38 @@ const AdminSidebar: React.FC = () => {
     root.classList.add(settings.theme)
 
     const isPixelTree = settings.theme.startsWith("pixel-tree")
+    const isLightTheme =
+      settings.theme === "light" || settings.theme === "pixel-tree-light"
     const pixelTreeTheme = isPixelTree
       ? THEME_PIXEL_TREE[
           settings.theme === "pixel-tree-light" ? "light" : "dark"
         ]
       : null
 
-    root.style.setProperty(
-      "--primary-color",
-      isPixelTree ? pixelTreeTheme.primary : getColorValue(settings.color)
-    )
-    root.style.setProperty(
-      "--secondary-color",
-      isPixelTree
-        ? pixelTreeTheme?.secondary ?? getColorValue(settings.color)
-        : getColorValue(settings.color)
-    )
+    // Handle color settings
+    if (settings.color !== "normal") {
+      root.style.setProperty(
+        "--primary-color",
+        isPixelTree ? pixelTreeTheme.primary : getColorValue(settings.color)
+      )
+      root.style.setProperty(
+        "--secondary-color",
+        isPixelTree
+          ? pixelTreeTheme?.secondary ?? getColorValue(settings.color)
+          : getColorValue(settings.color)
+      )
+    } else {
+      // For "normal" color: black for light themes, white for dark themes
+      root.style.setProperty(
+        "--primary-color",
+        isLightTheme ? "#000000" : "#FFFFFF"
+      )
+      root.style.setProperty(
+        "--secondary-color",
+        isLightTheme ? "#000000" : "#FFFFFF"
+      )
+    }
+
     root.style.setProperty(
       "--background-color",
       isPixelTree
@@ -240,7 +256,7 @@ const AdminSidebar: React.FC = () => {
     setSettings((prev) => ({ ...prev, theme }))
   }
 
-  const handleColorChange = (color: "blue" | "green" | "red") => {
+  const handleColorChange = (color: Settings["color"]) => {
     setSettings((prev) => ({ ...prev, color }))
   }
 
@@ -255,6 +271,7 @@ const AdminSidebar: React.FC = () => {
       green: "#10B981",
       red: "#EF4444",
       yellow: "#F59E0B",
+      normal: "#000000", // Fallback, not used for "normal"
     }
     return colors[color as keyof typeof colors] || colors.blue
   }
@@ -418,12 +435,17 @@ const AdminSidebar: React.FC = () => {
                   Color
                 </DropdownMenuSubTrigger>
                 <DropdownMenuSubContent className="bg-background text-text border-border">
-                  {["blue", "green", "red", "yellow"].map((color) => (
+                  {["normal", "blue", "green", "red", "yellow"].map((color) => (
                     <DropdownMenuItem
                       key={color}
                       onClick={() =>
                         handleColorChange(
-                          color as "blue" | "green" | "red" | "yellow"
+                          color as
+                            | "blue"
+                            | "green"
+                            | "red"
+                            | "yellow"
+                            | "normal"
                         )
                       }
                       className={cn(
